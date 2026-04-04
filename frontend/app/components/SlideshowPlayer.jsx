@@ -17,7 +17,7 @@ export default function SlideshowPlayer({ shotsWithImages, shotsWithAudio }) {
       {/* Main image */}
       <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
         <img
-          src={`data:image/png;base64,${currentShot.image_b64}`}
+          src={`data:image/jpeg;base64,${currentShot.image_b64}`}
           alt={`Shot ${currentIndex + 1}`}
           className="w-full h-full object-cover"
         />

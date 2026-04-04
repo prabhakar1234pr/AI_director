@@ -178,7 +178,7 @@ export default function ScriptPanel({
                 <div className="w-48 flex-shrink-0 aspect-video bg-surface">
                   {imageMap[i] ? (
                     <img
-                      src={`data:image/png;base64,${imageMap[i]}`}
+                      src={`data:image/jpeg;base64,${imageMap[i]}`}
                       alt={`Shot ${i + 1}`}
                       className="w-full h-full object-cover"
                     />

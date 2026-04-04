@@ -27,7 +27,7 @@ export default function ShotCard({ shot, index, imageB64, isActive, onRegenerate
           </div>
         ) : imageB64 ? (
           <img
-            src={`data:image/png;base64,${imageB64}`}
+            src={`data:image/jpeg;base64,${imageB64}`}
             alt={`Shot ${index + 1}: ${shot.shot}`}
             className="w-full h-full object-cover"
           />
