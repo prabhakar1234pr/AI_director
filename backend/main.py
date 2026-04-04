@@ -10,7 +10,7 @@ app = FastAPI(title="AI Director API")
 
 origins = ["http://localhost:3000"]
 if frontend_url := os.getenv("FRONTEND_URL"):
-    origins.append(frontend_url)
+    origins.append(frontend_url.rstrip("/"))
 
 app.add_middleware(
     CORSMiddleware,
