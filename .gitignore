@@ -1,34 +1,29 @@
 # Secrets
 .env
-*.env.local
-*service-account*.json
-credentials.json
-token.json
+backend/.env
+frontend/.env.local
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
 .venv/
-.uv/
+venv/
+env/
+*.egg-info/
 dist/
 build/
-*.egg-info/
 
-# Node / Next.js
+# Node
 node_modules/
 .next/
 out/
-.vercel/
-
-# Temp files
-.tmp/
-*.log
+npm-debug.log*
 
 # OS
 .DS_Store
 Thumbs.db
 
-# IDE
-.vscode/
-.idea/
+# Claude Code internals
+.claude/memory/
+.claude/plans/
