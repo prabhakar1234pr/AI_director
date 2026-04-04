@@ -65,14 +65,18 @@ export default function DirectorPage() {
 
     const allMessages = [...state.messages, userMsg];
 
-    // Extract style hint from conversation
+    // Detect style from message; default to "cinematic" so we always go
+    // straight to Phase 2 (JSON script generation) — skipping the clarify
+    // phase which MiniMax-M2.5 doesn't follow reliably.
     let style = state.style;
     if (!style) {
       const lower = text.toLowerCase();
       const styles = ["cinematic", "anime", "noir", "cartoon", "sci-fi", "horror", "fantasy", "documentary"];
       for (const s of styles) {
-        if (lower.includes(s)) { style = s; dispatch({ type: "SET_STYLE", style: s }); break; }
+        if (lower.includes(s)) { style = s; break; }
       }
+      if (!style) style = "cinematic";
+      dispatch({ type: "SET_STYLE", style });
     }
 
     try {
