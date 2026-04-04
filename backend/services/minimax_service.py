@@ -95,6 +95,8 @@ async def generate_script(messages: list[dict], style: str | None) -> GenerateSc
 
 async def generate_image_for_shot(visual: str, shot_label: str, style: str) -> str:
     """Returns base64-encoded PNG string for a single shot."""
+    import base64 as _base64
+
     api_key = os.getenv("MINIMAX_API_KEY")
     if not api_key:
         raise ValueError("MINIMAX_API_KEY not set")
@@ -108,7 +110,7 @@ async def generate_image_for_shot(visual: str, shot_label: str, style: str) -> s
         "model": "image-01",
         "prompt": prompt,
         "aspect_ratio": "16:9",
-        "response_format": "base64",
+        "response_format": "url",
         "number_of_images": 1,
     }
 
@@ -124,8 +126,44 @@ async def generate_image_for_shot(visual: str, shot_label: str, style: str) -> s
         resp.raise_for_status()
         data = resp.json()
 
-    # Response shape: {"data": {"image_base64": ["<base64>", ...]}}
-    return data["data"]["image_base64"][0]
+    # Check for API-level errors (MiniMax can return errors with HTTP 200)
+    base_resp = data.get("base_resp") or {}
+    if base_resp.get("status_code") not in (None, 0):
+        raise ValueError(
+            f"MiniMax image API error {base_resp.get('status_code', '?')}: "
+            f"{base_resp.get('status_msg', data)}"
+        )
+
+    # Handle all known response shapes:
+    # {"data": {"image_urls": ["https://..."]}}   ← current API (url mode)
+    # {"data": {"image_base64": ["<b64>"]}}        ← base64 mode
+    # {"data": [{"url": "https://..."}]}           ← legacy
+    block = data.get("data")
+    image_bytes: bytes | None = None
+
+    if isinstance(block, dict):
+        urls = block.get("image_urls") or []
+        if urls and isinstance(urls[0], str):
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                img_resp = await client.get(urls[0])
+                img_resp.raise_for_status()
+                image_bytes = img_resp.content
+        else:
+            b64_list = block.get("image_base64") or []
+            if b64_list and isinstance(b64_list[0], str):
+                image_bytes = _base64.b64decode(b64_list[0])
+    elif isinstance(block, list) and block:
+        url = block[0].get("url") if isinstance(block[0], dict) else None
+        if url:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                img_resp = await client.get(url)
+                img_resp.raise_for_status()
+                image_bytes = img_resp.content
+
+    if not image_bytes:
+        raise ValueError(f"MiniMax returned no image. Response: {data!r}")
+
+    return _base64.b64encode(image_bytes).decode("utf-8")
 
 
 async def generate_all_images(shots: list[Shot], style: str) -> list[str]:
