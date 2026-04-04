@@ -11,9 +11,14 @@ from pydantic import BaseModel
 load_dotenv()
 
 # Initialize Firebase Admin
-_cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "./backend-service-account.json")
-_firebase_cred = firebase_admin.credentials.Certificate(_cred_path)
-firebase_admin.initialize_app(_firebase_cred)
+# On Cloud Run, use Application Default Credentials (ADC).
+# Locally, use service account key file via GOOGLE_APPLICATION_CREDENTIALS.
+_cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+if _cred_path and os.path.isfile(_cred_path):
+    _firebase_cred = firebase_admin.credentials.Certificate(_cred_path)
+    firebase_admin.initialize_app(_firebase_cred)
+else:
+    firebase_admin.initialize_app()  # ADC on Cloud Run
 
 from middleware.auth import verify_token
 from services import voices as voice_service
