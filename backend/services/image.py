@@ -39,6 +39,12 @@ async def generate_image(
         resp.raise_for_status()
         data = resp.json()
 
+    if "data" not in data or not data["data"]:
+        base_resp = data.get("base_resp", {})
+        raise ValueError(
+            f"MiniMax image API error {base_resp.get('status_code', '?')}: "
+            f"{base_resp.get('status_msg', data)}"
+        )
     image_url = data["data"][0]["url"]
 
     # Download the image and upload to GCS

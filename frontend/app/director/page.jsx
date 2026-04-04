@@ -199,6 +199,7 @@ export default function DirectorPage() {
         style={state.style}
         onRegenerateImage={regenerateImage}
         onGenerateAudio={() => generateAudio()}
+        onGenerateImages={() => generateImages()}
       />
     ),
     playback: (
@@ -227,7 +228,15 @@ export default function DirectorPage() {
         onSend={sendMessage}
         onRegenerate={() => sendMessage("Please regenerate the script with a different approach")}
       />
-      {rightPanel[state.activeTab] || rightPanel.script}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {state.error && (
+          <div className="flex items-center justify-between px-4 py-2 text-xs shrink-0" style={{ background: "#2D1515", color: "#F87171", borderBottom: "1px solid #3D1F1F" }}>
+            <span>⚠ {state.error}</span>
+            <button onClick={() => dispatch({ type: "SET_ERROR", error: null })} style={{ color: "#F87171", opacity: 0.7 }}>✕</button>
+          </div>
+        )}
+        {rightPanel[state.activeTab] || rightPanel.script}
+      </div>
     </Layout>
   );
 }
