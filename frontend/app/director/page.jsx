@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
@@ -39,12 +39,25 @@ function reducer(state, action) {
     case "SET_PLAYING": return { ...state, isPlaying: action.playing };
     case "SET_ERROR": return { ...state, error: action.error };
     case "RESET_PROJECT": return { ...initialState, user: state.user, authLoading: false };
+    case "LOAD_PROJECT": return {
+      ...state,
+      projectId: action.project.id,
+      messages: action.project.messages || [],
+      script: action.project.shots?.length ? action.project.shots : null,
+      style: action.project.style || "cinematic",
+      stage: action.project.stage || "script_ready",
+      activeTab: action.project.shots?.some((s) => s.image_url) ? "storyboard" : "script",
+      currentSlide: 0,
+      isPlaying: false,
+      error: null,
+    };
     default: return state;
   }
 }
 
 export default function DirectorPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [projects, setProjects] = useState([]);
   const router = useRouter();
   const autoSaveTimer = useRef(null);
 
@@ -52,9 +65,20 @@ export default function DirectorPage() {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (!user) { router.replace("/"); return; }
       dispatch({ type: "SET_USER", user });
+      // Load project history once user is authenticated
+      api.listProjects().then((res) => setProjects(res.projects || [])).catch(() => {});
     });
     return unsub;
   }, [router]);
+
+  async function loadProject(id) {
+    try {
+      const project = await api.getProject(id);
+      dispatch({ type: "LOAD_PROJECT", project });
+    } catch (e) {
+      dispatch({ type: "SET_ERROR", error: `Failed to load project: ${e.message}` });
+    }
+  }
 
   async function sendMessage(text) {
     if (!text.trim() || state.stage === "generating_images" || state.stage === "generating_audio") return;
@@ -114,6 +138,8 @@ export default function DirectorPage() {
       dispatch({ type: "SET_SHOTS", shots: res.shots });
       dispatch({ type: "SET_STAGE", stage: "script_ready" });
       autoSave({ ...state, script: res.shots, stage: "script_ready" });
+      // Refresh history to reflect updated shots
+      api.listProjects().then((r) => setProjects(r.projects || [])).catch(() => {});
     } catch (e) {
       dispatch({ type: "SET_ERROR", error: `Image generation failed: ${e.message}` });
       dispatch({ type: "SET_STAGE", stage: "script_ready" });
@@ -169,6 +195,8 @@ export default function DirectorPage() {
           stage: snapState.stage,
         });
         if (!snapState.projectId) dispatch({ type: "SET_PROJECT_ID", id: res.project_id });
+        // Refresh history list after save
+        api.listProjects().then((r) => setProjects(r.projects || [])).catch(() => {});
       } catch {
         // silent fail
       }
@@ -220,6 +248,8 @@ export default function DirectorPage() {
       projectTitle={state.messages.find((m) => m.role === "user")?.content?.slice(0, 40)}
       user={state.user}
       onNewProject={() => dispatch({ type: "RESET_PROJECT" })}
+      onLoadProject={loadProject}
+      projects={projects}
     >
       <ChatPanel
         messages={state.messages}
