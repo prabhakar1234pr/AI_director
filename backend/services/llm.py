@@ -69,6 +69,13 @@ async def chat(messages: list[dict], style: str | None = None) -> tuple[str, lis
         resp.raise_for_status()
         data = resp.json()
 
+    if "choices" not in data or not data["choices"]:
+        # Surface the actual API error (e.g. auth failure, quota exceeded)
+        base_resp = data.get("base_resp", {})
+        raise ValueError(
+            f"MiniMax API error {base_resp.get('status_code', '?')}: "
+            f"{base_resp.get('status_msg', data)}"
+        )
     reply = data["choices"][0]["message"]["content"].strip()
 
     # Try to extract JSON array from the reply
