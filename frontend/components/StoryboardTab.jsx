@@ -4,7 +4,7 @@ import Image from "next/image";
 
 const STYLES = ["Cinematic", "Noir", "Anime", "Sci-fi", "Horror", "Documentary", "Fantasy", "Cartoon"];
 
-export default function StoryboardTab({ script, stage, style, onRegenerateImage, onGenerateAudio }) {
+export default function StoryboardTab({ script, stage, style, onRegenerateImage, onGenerateAudio, onGenerateImages }) {
   const [selectedStyle, setSelectedStyle] = useState(style || "Cinematic");
   const [styleOpen, setStyleOpen] = useState(false);
   const isGenerating = stage === "generating_images";
@@ -42,6 +42,16 @@ export default function StoryboardTab({ script, stage, style, onRegenerateImage,
         </div>
 
         <div className="flex-1" />
+
+        {!hasImages && !isGenerating && (
+          <button
+            onClick={onGenerateImages}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded font-semibold transition-all hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #7C3AED, #8B5CF6)", color: "white" }}
+          >
+            ✦ Generate Storyboard
+          </button>
+        )}
 
         <button
           onClick={onGenerateAudio}
