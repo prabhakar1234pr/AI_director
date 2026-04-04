@@ -65,23 +65,9 @@ export function useApi(dispatch) {
   async function generateAudio(shots) {
     dispatch({ type: 'SET_LOADING', payload: 'audio' })
     dispatch({ type: 'CLEAR_ERROR' })
-    try {
-      const res = await fetch(`${API_BASE}/generate-audio`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shots }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }))
-        throw new Error(err.detail || `Audio generation failed (${res.status})`)
-      }
-      const data = await res.json()
-      dispatch({ type: 'SET_AUDIO', payload: data.shots })
-    } catch (e) {
-      dispatch({ type: 'SET_ERROR', payload: e.message })
-    } finally {
-      dispatch({ type: 'CLEAR_LOADING' })
-    }
+    // Use browser Web Speech API — no backend call needed
+    dispatch({ type: 'SET_AUDIO', payload: shots })
+    dispatch({ type: 'CLEAR_LOADING' })
   }
 
   return { sendChatMessage, generateImages, generateAudio }

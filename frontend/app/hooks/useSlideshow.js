@@ -1,118 +1,69 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 export function useSlideshow(shotsWithAudio) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const audioRef = useRef(null)
-  const objectUrlsRef = useRef([])
 
-  // Decode all base64 audio into object URLs when shotsWithAudio changes
+  const cancelSpeech = () => {
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+  }
+
+  // Stop speech when audio list changes or on unmount
   useEffect(() => {
-    // Revoke previous object URLs
-    objectUrlsRef.current.forEach((url) => url && URL.revokeObjectURL(url))
-    objectUrlsRef.current = []
+    cancelSpeech()
     setCurrentIndex(0)
     setIsPlaying(false)
-
-    if (!shotsWithAudio || shotsWithAudio.length === 0) return
-
-    const urls = shotsWithAudio.map((shot) => {
-      if (!shot.audio_b64) return null
-      try {
-        const binary = atob(shot.audio_b64)
-        const bytes = new Uint8Array(binary.length)
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i)
-        }
-        const blob = new Blob([bytes], { type: 'audio/mpeg' })
-        return URL.createObjectURL(blob)
-      } catch {
-        return null
-      }
-    })
-
-    objectUrlsRef.current = urls
+    return cancelSpeech
   }, [shotsWithAudio])
 
-  // Load audio for current shot
+  // Speak current shot when playing
   useEffect(() => {
-    const url = objectUrlsRef.current[currentIndex]
-    if (!url) return
+    if (!isPlaying || !shotsWithAudio?.[currentIndex]) return
 
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.onended = null
-    }
+    const text = shotsWithAudio[currentIndex].audio
+    if (!text) return
 
-    const audio = new Audio(url)
-    audioRef.current = audio
-
-    audio.onended = () => {
+    cancelSpeech()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.onend = () => {
       const next = currentIndex + 1
-      if (next < (shotsWithAudio?.length || 0)) {
+      if (next < shotsWithAudio.length) {
         setCurrentIndex(next)
       } else {
         setIsPlaying(false)
       }
     }
+    window.speechSynthesis.speak(utterance)
+  }, [currentIndex, isPlaying, shotsWithAudio])
 
-    if (isPlaying) {
-      audio.play().catch(console.error)
-    }
-
-    return () => {
-      audio.pause()
-      audio.onended = null
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, shotsWithAudio])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      objectUrlsRef.current.forEach((url) => url && URL.revokeObjectURL(url))
-      if (audioRef.current) audioRef.current.pause()
-    }
-  }, [])
-
-  const play = useCallback(() => {
-    setIsPlaying(true)
-    audioRef.current?.play().catch(console.error)
-  }, [])
+  const play = useCallback(() => setIsPlaying(true), [])
 
   const pause = useCallback(() => {
     setIsPlaying(false)
-    audioRef.current?.pause()
+    cancelSpeech()
   }, [])
 
   const next = useCallback(() => {
-    if (!shotsWithAudio) return
-    if (currentIndex < shotsWithAudio.length - 1) {
-      audioRef.current?.pause()
-      setIsPlaying(false)
-      setCurrentIndex((i) => i + 1)
-    }
+    if (!shotsWithAudio || currentIndex >= shotsWithAudio.length - 1) return
+    cancelSpeech()
+    setIsPlaying(false)
+    setCurrentIndex((i) => i + 1)
   }, [currentIndex, shotsWithAudio])
 
   const prev = useCallback(() => {
-    if (currentIndex > 0) {
-      audioRef.current?.pause()
-      setIsPlaying(false)
-      setCurrentIndex((i) => i - 1)
-    }
+    if (currentIndex <= 0) return
+    cancelSpeech()
+    setIsPlaying(false)
+    setCurrentIndex((i) => i - 1)
   }, [currentIndex])
 
-  const goTo = useCallback(
-    (index) => {
-      if (!shotsWithAudio) return
-      audioRef.current?.pause()
-      setIsPlaying(false)
-      setCurrentIndex(index)
-    },
-    [shotsWithAudio]
-  )
+  const goTo = useCallback((index) => {
+    cancelSpeech()
+    setIsPlaying(false)
+    setCurrentIndex(index)
+  }, [])
 
   return { currentIndex, isPlaying, play, pause, next, prev, goTo }
 }
