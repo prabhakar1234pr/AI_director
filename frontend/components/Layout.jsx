@@ -1,22 +1,22 @@
 "use client";
+import { useState } from "react";
 import Image from "next/image";
 import { signOutUser } from "../lib/firebase";
 
 const TABS = ["script", "storyboard", "playback"];
 
-export default function Layout({ activeTab, onTabChange, projectTitle, user, onNewProject, children }) {
+export default function Layout({ activeTab, onTabChange, projectTitle, user, onNewProject, onLoadProject, projects, children }) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#0A0A0F" }}>
       {/* Icon sidebar */}
       <aside className="flex flex-col items-center gap-4 py-4 border-r" style={{ width: 44, background: "#0D0D14", borderColor: "#1E1E2E" }}>
         <Image src="/logo.png" alt="logo" width={28} height={28} className="mb-2" />
-        <SidebarIcon title="New Scene" onClick={onNewProject}>
+        <SidebarIcon title="New Scene" onClick={() => { setHistoryOpen(false); onNewProject(); }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
         </SidebarIcon>
-        <SidebarIcon title="Script">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
-        </SidebarIcon>
-        <SidebarIcon title="History">
+        <SidebarIcon title="History" active={historyOpen} onClick={() => setHistoryOpen(!historyOpen)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
         </SidebarIcon>
         {/* spacer */}
@@ -25,6 +25,38 @@ export default function Layout({ activeTab, onTabChange, projectTitle, user, onN
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </SidebarIcon>
       </aside>
+
+      {/* History panel */}
+      {historyOpen && (
+        <div className="flex flex-col border-r shrink-0 overflow-hidden" style={{ width: 240, background: "#0D0D14", borderColor: "#1E1E2E" }}>
+          <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: "#1E1E2E" }}>
+            <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#64748B" }}>History</span>
+            <button onClick={() => setHistoryOpen(false)} className="text-xs" style={{ color: "#64748B" }}>✕</button>
+          </div>
+          <div className="flex-1 overflow-y-auto py-2">
+            {!projects || projects.length === 0 ? (
+              <p className="text-xs px-3 py-4 text-center" style={{ color: "#64748B" }}>No saved projects yet</p>
+            ) : (
+              projects.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => { onLoadProject(p.id); setHistoryOpen(false); }}
+                  className="w-full text-left px-3 py-2.5 rounded mx-1 transition-all hover:bg-[#1E1E2E] group"
+                  style={{ width: "calc(100% - 8px)" }}
+                >
+                  <p className="text-xs font-medium truncate" style={{ color: "#E2E8F0" }}>{p.title || "Untitled Scene"}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#64748B" }}>
+                    {p.shots?.length || 0} shots · {p.style || "cinematic"}
+                    {p.updatedAt?.seconds && (
+                      <span> · {new Date(p.updatedAt.seconds * 1000).toLocaleDateString()}</span>
+                    )}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main area */}
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -71,15 +103,15 @@ export default function Layout({ activeTab, onTabChange, projectTitle, user, onN
   );
 }
 
-function SidebarIcon({ title, onClick, children }) {
+function SidebarIcon({ title, onClick, active, children }) {
   return (
     <button
       title={title}
       onClick={onClick}
       className="flex items-center justify-center w-8 h-8 rounded transition-all"
-      style={{ color: "#64748B" }}
-      onMouseEnter={(e) => (e.currentTarget.style.color = "#8B5CF6")}
-      onMouseLeave={(e) => (e.currentTarget.style.color = "#64748B")}
+      style={{ color: active ? "#8B5CF6" : "#64748B", background: active ? "#1E1E2E" : "transparent" }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = "#8B5CF6"; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "#64748B"; }}
     >
       {children}
     </button>
