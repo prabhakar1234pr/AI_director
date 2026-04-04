@@ -18,9 +18,18 @@ def create_project(uid: str, data: dict) -> str:
 def update_project(project_id: str, uid: str, data: dict) -> None:
     ref = db.collection("projects").document(project_id)
     doc = ref.get()
-    if not doc.exists or doc.to_dict().get("userId") != uid:
+    if not doc.exists:
+        # Client-provided UUID — create the document with this specific ID
+        ref.set({
+            **data,
+            "userId": uid,
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc),
+        })
+    elif doc.to_dict().get("userId") != uid:
         raise PermissionError("Project not found or access denied")
-    ref.update({**data, "updatedAt": datetime.now(timezone.utc)})
+    else:
+        ref.update({**data, "updatedAt": datetime.now(timezone.utc)})
 
 
 def get_project(project_id: str, uid: str) -> dict | None:

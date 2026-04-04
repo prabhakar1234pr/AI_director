@@ -81,8 +81,12 @@ export default function DirectorPage() {
       dispatch({ type: "ADD_MESSAGE", message: aiMsg });
 
       if (res.script) {
+        // Generate a project ID immediately so generateImages/generateAudio never
+        // block on the async autoSave debounce (1 s delay + network round-trip).
+        const newProjectId = state.projectId || crypto.randomUUID();
+        if (!state.projectId) dispatch({ type: "SET_PROJECT_ID", id: newProjectId });
         dispatch({ type: "SET_SCRIPT", script: res.script });
-        autoSave({ ...state, messages: [...allMessages, aiMsg], script: res.script, style, stage: "script_ready" });
+        autoSave({ ...state, projectId: newProjectId, messages: [...allMessages, aiMsg], script: res.script, style, stage: "script_ready" });
       } else {
         dispatch({ type: "SET_STAGE", stage: "idle" });
       }
