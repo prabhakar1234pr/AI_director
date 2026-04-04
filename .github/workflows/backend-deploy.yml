@@ -1,0 +1,78 @@
+name: Backend — Build & Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**"]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ai-director-mvp
+  REGION: us-central1
+  REGISTRY: us-central1-docker.pkg.dev
+  SERVICE: ai-director-api
+  IMAGE: us-central1-docker.pkg.dev/ai-director-mvp/ai-director-docker/api
+  SA_EMAIL: ai-director-backend@ai-director-mvp.iam.gserviceaccount.com
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python + uv
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv and sync deps
+        working-directory: backend
+        run: pip install uv && uv sync
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        working-directory: backend
+        run: |
+          docker build \
+            -t ${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.IMAGE }}:latest \
+            .
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --image ${{ env.IMAGE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --service-account ${{ env.SA_EMAIL }} \
+            --update-env-vars "MINIMAX_API_KEY=${{ secrets.MINIMAX_API_KEY }},MINIMAX_GROUP_ID=${{ secrets.MINIMAX_GROUP_ID }},ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }},GCP_PROJECT_ID=${{ env.PROJECT_ID }},GCP_BUCKET_NAME=ai-director-mvp-media,FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
+            --min-instances 0 \
+            --max-instances 10 \
+            --memory 1Gi \
+            --cpu 1 \
+            --timeout 300 \
+            --project ${{ env.PROJECT_ID }}
+
+      - name: Print deployment URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE }} \
+            --region ${{ env.REGION }} --project ${{ env.PROJECT_ID }} \
+            --format 'value(status.url)')
+          echo "✅ Deployed: $URL"
