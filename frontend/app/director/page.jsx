@@ -77,7 +77,12 @@ export default function DirectorPage() {
 
     try {
       const res = await api.chat(allMessages, style, state.projectId);
-      const aiMsg = { role: "assistant", content: res.reply };
+      const aiMsg = {
+        role: "assistant",
+        content: res.script
+          ? `Your ${res.script.length}-shot screenplay is ready. Review it in the Script tab, then click "Generate Storyboard" to create images.`
+          : res.reply,
+      };
       dispatch({ type: "ADD_MESSAGE", message: aiMsg });
 
       if (res.script) {
