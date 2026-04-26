@@ -12,13 +12,6 @@ const PAGE_LABEL = {
   narration: 'Narration',
 }
 
-const PAGE_PLACEHOLDER = {
-  script: 'Edit the script — "rewrite shot 2 as a close-up", "add a final wide shot", "make the dialogue softer"…',
-  visuals: 'Talk about a shot — "regenerate shot 3 with more rain", "make shot 1 darker"…',
-  storyboard: 'Rearrange or edit panels — "swap shots 1 and 2", "change the dialogue on shot 4"…',
-  narration: 'Tweak narration — "make shot 2 sound more urgent"…',
-}
-
 const PAGE_EMPTY_HINT = {
   script: [
     'A detective in a rain-soaked alley at midnight',
@@ -75,14 +68,12 @@ export default function ChatPanel({ compact = false }) {
 
   return (
     <div className="flex flex-col h-full bg-panel">
-      <div className="flex-shrink-0 px-5 py-4 border-b border-border">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-accent" />
-            <h2 className="text-sm font-semibold tracking-tight text-white">
-              Director Chat
-            </h2>
-          </div>
+      <div className="flex-shrink-0 px-5 py-4 pr-14 border-b border-border">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Sparkles className="w-4 h-4 text-accent" />
+          <h2 className="text-sm font-semibold tracking-tight text-white">
+            Director Chat
+          </h2>
           <span className="text-[10px] uppercase tracking-widest text-muted font-medium px-2 py-0.5 rounded-md bg-card border border-border">
             on {PAGE_LABEL[page]}
           </span>
@@ -156,9 +147,8 @@ export default function ChatPanel({ compact = false }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isDisabled}
-            placeholder={PAGE_PLACEHOLDER[page]}
             rows={2}
-            className="flex-1 resize-none bg-card border border-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-muted focus:outline-none focus:border-accent disabled:opacity-50 disabled:cursor-not-allowed leading-relaxed"
+            className="flex-1 resize-none bg-card border border-border rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-accent disabled:opacity-50 disabled:cursor-not-allowed leading-relaxed"
           />
           <button
             type="button"
