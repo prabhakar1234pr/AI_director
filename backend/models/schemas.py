@@ -10,7 +10,7 @@ class Shot(BaseModel):
 
 
 class ShotWithImage(Shot):
-    image_b64: str  # base64 image from Gemini
+    image_b64: str  # base64 image from gemini
 
 
 class ShotWithAudio(Shot):
