@@ -96,7 +96,11 @@ def _fetch_access_token_sync() -> str:
     if not credentials.token:
         raise ValueError("Failed to obtain Google access token from service account credentials")
 
-    expiry = credentials.expiry or (datetime.now(timezone.utc) + timedelta(minutes=55))
+    expiry = credentials.expiry
+    if expiry is None:
+        expiry = datetime.now(timezone.utc) + timedelta(minutes=55)
+    elif expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
     _token_cache["token"] = credentials.token
     _token_cache["expires_at"] = expiry - timedelta(minutes=2)
     return credentials.token
