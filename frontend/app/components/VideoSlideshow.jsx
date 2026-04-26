@@ -7,6 +7,8 @@ import {
   Loader2,
   Mic,
   Video as VideoIcon,
+  Volume2,
+  VolumeX,
 } from 'lucide-react'
 import { useDirectorStore } from '../stores/useDirectorStore'
 
@@ -16,6 +18,8 @@ export default function VideoSlideshow() {
   const shotsWithAudio = useDirectorStore((s) => s.shotsWithAudio)
   const shots = useDirectorStore((s) => s.shots)
   const loading = useDirectorStore((s) => s.loading)
+  const narratorMuted = useDirectorStore((s) => s.narratorMuted)
+  const toggleNarratorMuted = useDirectorStore((s) => s.toggleNarratorMuted)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const videoRef = useRef(null)
@@ -35,10 +39,12 @@ export default function VideoSlideshow() {
   }, [shotsWithVideos.length])
 
   // Layer the Chirp 3 HD voiceover on top of the Veo 3 clip's native audio.
-  // The video is NOT muted — both tracks mix while the slide plays.
+  // The video keeps its native audio; only the narrator track responds to
+  // the mute toggle.
   useEffect(() => {
     const el = audioRef.current
     if (!el) return
+    el.muted = narratorMuted
     const b64 = currentAudioShot?.audio_b64
     if (b64) {
       el.src = `data:audio/mpeg;base64,${b64}`
@@ -58,7 +64,15 @@ export default function VideoSlideshow() {
     return () => {
       try { el.pause() } catch { /* noop */ }
     }
+    // narratorMuted intentionally excluded: toggling mute should not restart
+    // the clip — that's handled by the dedicated effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, currentAudioShot?.audio_b64])
+
+  // Apply mute toggles live without restarting the narrator clip.
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = narratorMuted
+  }, [narratorMuted])
 
   // Auto-advance to the next clip when the current Veo 3 clip ends.
   useEffect(() => {
@@ -123,15 +137,42 @@ export default function VideoSlideshow() {
           </span>
         </div>
 
-        {/* Top-right voice tag (only when TTS narration exists for this shot). */}
-        {currentAudioShot?.voice_id && (
-          <div className="absolute top-3.5 right-3.5 flex items-center gap-2 pointer-events-none">
-            <span className="bg-black/75 backdrop-blur-sm text-white/90 text-[11px] px-2 py-1 rounded-lg font-medium tracking-tight flex items-center gap-1.5 uppercase">
-              <Mic className="w-3 h-3 text-accent" />
-              <span className="text-white">{currentAudioShot.speaker || 'narrator'}</span>
-              <span className="text-white/50">·</span>
-              <span className="text-white/70 normal-case">{currentAudioShot.voice_id}</span>
-            </span>
+        {/* Top-right cluster: narrator mute toggle + voice tag. */}
+        {(currentAudioShot?.voice_id || shotsWithAudio.length > 0) && (
+          <div className="absolute top-3.5 right-3.5 flex items-center gap-2">
+            {shotsWithAudio.length > 0 && (
+              <button
+                type="button"
+                onClick={toggleNarratorMuted}
+                aria-label={narratorMuted ? 'Unmute narrator' : 'Mute narrator'}
+                aria-pressed={narratorMuted}
+                title={
+                  narratorMuted
+                    ? 'Unmute narrator (video audio is unaffected)'
+                    : 'Mute narrator (video audio keeps playing)'
+                }
+                className={`flex items-center gap-1.5 text-[11px] uppercase tracking-tight font-medium px-2 py-1 rounded-lg backdrop-blur-sm transition-colors ${
+                  narratorMuted
+                    ? 'bg-red-500/85 text-white hover:bg-red-500'
+                    : 'bg-black/75 text-white/90 hover:bg-black/95'
+                }`}
+              >
+                {narratorMuted ? (
+                  <VolumeX className="w-3.5 h-3.5" />
+                ) : (
+                  <Volume2 className="w-3.5 h-3.5" />
+                )}
+                <span>{narratorMuted ? 'Muted' : 'Narrator'}</span>
+              </button>
+            )}
+            {currentAudioShot?.voice_id && (
+              <span className="bg-black/75 backdrop-blur-sm text-white/90 text-[11px] px-2 py-1 rounded-lg font-medium tracking-tight flex items-center gap-1.5 uppercase pointer-events-none">
+                <Mic className="w-3 h-3 text-accent" />
+                <span className="text-white">{currentAudioShot.speaker || 'narrator'}</span>
+                <span className="text-white/50">·</span>
+                <span className="text-white/70 normal-case">{currentAudioShot.voice_id}</span>
+              </span>
+            )}
           </div>
         )}
 

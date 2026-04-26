@@ -58,6 +58,10 @@ const initialState = {
   //   selected: { [count]: variantIndex }.
   storyboardOverrides: {},
   storyboardLayoutVariants: {},
+  // Mute the TTS narrator track. In the AI Video view this leaves the Veo
+  // clip's native audio playing — only the layered Chirp 3 voiceover is
+  // silenced.
+  narratorMuted: false,
 }
 
 async function postJson(path, body) {
@@ -121,6 +125,9 @@ export const useDirectorStore = create(
       },
     })
   },
+
+  setNarratorMuted: (muted) => set({ narratorMuted: !!muted }),
+  toggleNarratorMuted: () => set({ narratorMuted: !get().narratorMuted }),
 
   setScriptJsonRaw: (raw) => set({ scriptJson: raw }),
   applyValidScript: (parsed) =>
@@ -447,6 +454,7 @@ export const useDirectorStore = create(
         view: state.view,
         storyboardOverrides: state.storyboardOverrides,
         storyboardLayoutVariants: state.storyboardLayoutVariants,
+        narratorMuted: state.narratorMuted,
       }),
     }
   )

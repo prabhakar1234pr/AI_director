@@ -5,10 +5,19 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 // Plays a sequence of shots whose audio is a base64-encoded MP3 (from Google
 // Chirp 3 HD via the backend). Falls back to text-only stepping if a shot has
 // no audio_b64 (e.g. mid-generation states).
-export function useSlideshow(shotsWithAudio) {
+//
+// `options.muted` mutes the underlying <audio> element while still letting
+// the slideshow advance — used by the narrator-mute toggle.
+export function useSlideshow(shotsWithAudio, { muted = false } = {}) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef(null)
+
+  // Keep the audio element's mute flag in sync with the option. We do this in
+  // its own effect so toggling mute mid-playback doesn't restart the clip.
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = muted
+  }, [muted])
 
   const stopAudio = useCallback(() => {
     const el = audioRef.current
@@ -54,6 +63,7 @@ export function useSlideshow(shotsWithAudio) {
       audioRef.current = new Audio()
     }
     const el = audioRef.current
+    el.muted = muted
     el.src = `data:audio/mpeg;base64,${b64}`
     el.onended = () => {
       const nextIdx = currentIndex + 1

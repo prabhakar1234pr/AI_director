@@ -1,17 +1,27 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Mic, Pause, Play, Volume2 } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Mic,
+  Pause,
+  Play,
+  Volume2,
+  VolumeX,
+} from 'lucide-react'
 import { useSlideshow } from '../hooks/useSlideshow'
 import { useDirectorStore } from '../stores/useDirectorStore'
 
 export default function SlideshowPlayer() {
   const shotsWithImages = useDirectorStore((s) => s.shotsWithImages)
   const shotsWithAudio = useDirectorStore((s) => s.shotsWithAudio)
+  const narratorMuted = useDirectorStore((s) => s.narratorMuted)
+  const toggleNarratorMuted = useDirectorStore((s) => s.toggleNarratorMuted)
   const hasAudio = shotsWithAudio.length > 0
 
   const audioForHook = hasAudio ? shotsWithAudio : null
   const { currentIndex, isPlaying, play, pause, next, prev, goTo } =
-    useSlideshow(audioForHook)
+    useSlideshow(audioForHook, { muted: narratorMuted })
 
   const currentShot = shotsWithImages?.[currentIndex]
   const currentAudioShot = shotsWithAudio?.[currentIndex]
@@ -40,6 +50,27 @@ export default function SlideshowPlayer() {
         </div>
 
         <div className="absolute top-3.5 right-3.5 flex items-center gap-2">
+          {hasAudio && (
+            <button
+              type="button"
+              onClick={toggleNarratorMuted}
+              aria-label={narratorMuted ? 'Unmute narrator' : 'Mute narrator'}
+              aria-pressed={narratorMuted}
+              title={narratorMuted ? 'Unmute narrator' : 'Mute narrator'}
+              className={`flex items-center gap-1.5 text-[11px] uppercase tracking-tight font-medium px-2 py-1 rounded-lg backdrop-blur-sm transition-colors ${
+                narratorMuted
+                  ? 'bg-red-500/85 text-white hover:bg-red-500'
+                  : 'bg-black/75 text-white/90 hover:bg-black/95'
+              }`}
+            >
+              {narratorMuted ? (
+                <VolumeX className="w-3.5 h-3.5" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5" />
+              )}
+              <span>{narratorMuted ? 'Muted' : 'Narrator'}</span>
+            </button>
+          )}
           {currentAudioShot?.voice_id && (
             <span className="bg-black/75 backdrop-blur-sm text-white/90 text-[11px] px-2 py-1 rounded-lg font-medium tracking-tight flex items-center gap-1.5 uppercase">
               <Mic className="w-3 h-3 text-accent" />
