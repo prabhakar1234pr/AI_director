@@ -10,12 +10,14 @@ import {
   Mic,
   RotateCcw,
   ScrollText,
+  Video,
 } from 'lucide-react'
 import CeltxView from './CeltxView'
 import ScriptEditor from './ScriptEditor'
 import ShotCard from './ShotCard'
 import ComicStoryboard from './ComicStoryboard'
 import SlideshowPlayer from './SlideshowPlayer'
+import VideoSlideshow from './VideoSlideshow'
 import { useDirectorStore, VIEWS, VIEW_LABEL } from '../stores/useDirectorStore'
 
 const VIEW_ICON = {
@@ -23,6 +25,7 @@ const VIEW_ICON = {
   visuals: ImageIcon,
   storyboard: Film,
   narration: Mic,
+  video: Video,
 }
 
 function ViewTabs() {
@@ -62,6 +65,9 @@ export default function ScriptPanel() {
   const generateImages = useDirectorStore((s) => s.generateImages)
   const generateAudio = useDirectorStore((s) => s.generateAudio)
   const hasAudio = useDirectorStore((s) => s.shotsWithAudio.length > 0)
+  const generateVideos = useDirectorStore((s) => s.generateVideos)
+  const shotsWithVideos = useDirectorStore((s) => s.shotsWithVideos)
+  const hasVideos = shotsWithVideos.length > 0
 
   const [showEditor, setShowEditor] = useState(false)
 
@@ -240,6 +246,62 @@ export default function ScriptPanel() {
           <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">
             <div className="max-w-3xl mx-auto">
               <SlideshowPlayer />
+            </div>
+          </div>
+        </div>
+      )
+    }
+  } else if (view === 'video') {
+    if (!hasShots) {
+      body = (
+        <EmptyState
+          icon={Video}
+          title="No script yet"
+          hint="Write a script first, then come back to bring it to life with Veo 3."
+        />
+      )
+    } else {
+      body = (
+        <div className="flex flex-col h-full">
+          <div className="flex-shrink-0 px-5 py-1.5 border-b border-border bg-panel/60 backdrop-blur flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Video className="w-3.5 h-3.5 text-muted-strong" />
+              <span className="text-xs font-medium text-white tracking-tight">
+                AI Video
+              </span>
+              <span className="text-[11px] text-muted ml-0.5">
+                · Veo 3 Fast · {hasVideos ? `${shotsWithVideos.length} of ${shots.length}` : `${shots.length} pending`}
+              </span>
+            </div>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={generateVideos}
+              disabled={isLoading || !hasImages}
+              title={!hasImages ? 'Generate visuals first' : 'Generate videos with Veo 3 Fast'}
+              className="h-7 px-3 rounded-md bg-accent hover:bg-accent-hover disabled:bg-card disabled:text-muted disabled:border disabled:border-border disabled:cursor-not-allowed text-xs font-medium text-white transition-colors flex items-center gap-1.5 shadow-sm shadow-accent/20"
+            >
+              {loading === 'video' ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Rendering… (2–5 min)
+                </>
+              ) : hasVideos ? (
+                <>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Re-render All
+                </>
+              ) : (
+                <>
+                  <Video className="w-3.5 h-3.5" />
+                  Generate Videos
+                </>
+              )}
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">
+            <div className="max-w-3xl mx-auto">
+              <VideoSlideshow />
             </div>
           </div>
         </div>

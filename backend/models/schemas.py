@@ -19,6 +19,10 @@ class ShotWithAudio(Shot):
     speaker: str   # "narrator" or character name (e.g. "DETECTIVE")
 
 
+class ShotWithVideo(Shot):
+    video_b64: str  # base64-encoded MP4 (Veo 3 output, includes audio)
+
+
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str
@@ -100,10 +104,24 @@ class GenerateAudioResponse(BaseModel):
     assignments: list[VoiceAssignment]
 
 
+# ── Video generation (Veo 3 Fast, image-to-video) ─────────────────────────
+
+
+class GenerateVideosRequest(BaseModel):
+    shots: list[Shot]
+    style: str = "cinematic, photorealistic, dramatic lighting"
+    # One image per shot (base64 jpeg). Missing entries fall back to text-to-video.
+    images_b64: Optional[list[Optional[str]]] = None
+
+
+class GenerateVideosResponse(BaseModel):
+    shots: list[ShotWithVideo]
+
+
 # ── Cursor-style chat ─────────────────────────────────────────────────────
 
 
-PageId = Literal["script", "visuals", "storyboard", "narration"]
+PageId = Literal["script", "visuals", "storyboard", "narration", "video"]
 
 
 class ChatContext(BaseModel):

@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { API_BASE } from '../utils/constants'
 
-export const VIEWS = ['script', 'visuals', 'storyboard', 'narration']
+export const VIEWS = ['script', 'visuals', 'storyboard', 'narration', 'video']
 
 const STORAGE_KEY = 'ai-director-store'
 const STORAGE_VERSION = 1
@@ -21,20 +21,21 @@ function createSafeLocalStorage() {
       try {
         window.localStorage.setItem(name, value)
       } catch {
-        try {
-          const parsed = JSON.parse(value)
-          if (parsed?.state) {
-            parsed.state.shotsWithImages = []
-            parsed.state.shotsWithAudio = []
-            window.localStorage.setItem(name, JSON.stringify(parsed))
-            // eslint-disable-next-line no-console
-            console.warn(
-              '[ai-director] localStorage quota exceeded; image data was not persisted.'
-            )
-          }
-        } catch {
-          /* give up silently */
+      try {
+        const parsed = JSON.parse(value)
+        if (parsed?.state) {
+          parsed.state.shotsWithImages = []
+          parsed.state.shotsWithAudio = []
+          parsed.state.shotsWithVideos = []
+          window.localStorage.setItem(name, JSON.stringify(parsed))
+          // eslint-disable-next-line no-console
+          console.warn(
+            '[ai-director] localStorage quota exceeded; media payloads were not persisted.'
+          )
         }
+      } catch {
+        /* give up silently */
+      }
       }
     },
     removeItem: (name) => {
@@ -49,6 +50,7 @@ const initialState = {
   scriptJson: '',
   shotsWithImages: [],
   shotsWithAudio: [],
+  shotsWithVideos: [],
   loading: null,
   error: null,
   style: '',
@@ -86,7 +88,12 @@ export const useDirectorStore = create(
 
   setScriptJsonRaw: (raw) => set({ scriptJson: raw }),
   applyValidScript: (parsed) =>
-    set({ shots: parsed, shotsWithImages: [], shotsWithAudio: [] }),
+    set({
+      shots: parsed,
+      shotsWithImages: [],
+      shotsWithAudio: [],
+      shotsWithVideos: [],
+    }),
 
   pushMessage: (msg) => set({ messages: [...get().messages, msg] }),
 
@@ -111,6 +118,7 @@ export const useDirectorStore = create(
       scriptJson: JSON.stringify(shots, null, 2),
       shotsWithImages: [],
       shotsWithAudio: [],
+      shotsWithVideos: [],
     })
   },
 
@@ -121,26 +129,22 @@ export const useDirectorStore = create(
       scriptJson: JSON.stringify(shots, null, 2),
       shotsWithImages: get().shotsWithImages.filter((_, i) => i !== index),
       shotsWithAudio: get().shotsWithAudio.filter((_, i) => i !== index),
+      shotsWithVideos: get().shotsWithVideos.filter((_, i) => i !== index),
     })
   },
 
   reorderShots: (order) => {
-    const { shots, shotsWithImages, shotsWithAudio } = get()
+    const { shots, shotsWithImages, shotsWithAudio, shotsWithVideos } = get()
     if (!Array.isArray(order) || order.length !== shots.length) return
     const newShots = order.map((i) => shots[i])
-    const newImages =
-      shotsWithImages.length === shots.length
-        ? order.map((i) => shotsWithImages[i])
-        : []
-    const newAudio =
-      shotsWithAudio.length === shots.length
-        ? order.map((i) => shotsWithAudio[i])
-        : []
+    const reorderedOr = (arr) =>
+      arr.length === shots.length ? order.map((i) => arr[i]) : []
     set({
       shots: newShots,
       scriptJson: JSON.stringify(newShots, null, 2),
-      shotsWithImages: newImages,
-      shotsWithAudio: newAudio,
+      shotsWithImages: reorderedOr(shotsWithImages),
+      shotsWithAudio: reorderedOr(shotsWithAudio),
+      shotsWithVideos: reorderedOr(shotsWithVideos),
     })
   },
 
@@ -167,6 +171,7 @@ export const useDirectorStore = create(
           scriptJson: JSON.stringify(data.shots, null, 2),
           shotsWithImages: [],
           shotsWithAudio: [],
+          shotsWithVideos: [],
         })
       } else if (data.question) {
         set({
@@ -316,6 +321,29 @@ export const useDirectorStore = create(
       set({ loading: null })
     }
   },
+
+  // ── API: video (Veo 3 Fast, image-to-video) ──────────────────────────────
+
+  generateVideos: async () => {
+    const { shots, shotsWithImages, style } = get()
+    if (shots.length === 0) return
+    set({ loading: 'video', error: null })
+    try {
+      const images_b64 = shots.map(
+        (_, i) => shotsWithImages[i]?.image_b64 || null
+      )
+      const data = await postJson('/generate-videos', {
+        shots,
+        style: style || 'cinematic, photorealistic, dramatic lighting',
+        images_b64,
+      })
+      set({ shotsWithVideos: data.shots || [] })
+    } catch (e) {
+      set({ error: e.message })
+    } finally {
+      set({ loading: null })
+    }
+  },
     }),
     {
       name: STORAGE_KEY,
@@ -344,4 +372,5 @@ export const VIEW_LABEL = {
   visuals: 'Visuals',
   storyboard: 'Storyboard',
   narration: 'Narration',
+  video: 'AI Video',
 }

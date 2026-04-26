@@ -245,6 +245,7 @@ Page context rules:
 - "visuals" page: regenerate_image is the most likely action when the user comments on a specific shot.
 - "storyboard" page: edits to dialogue/audio shown in panels, or regenerate_image are typical.
 - "narration" page: edits to `audio` text are typical.
+- "video" page: the user is reviewing AI-generated video clips. There is no per-clip regeneration action available yet, so for video-tweak requests respond with a {"type": "reply"} explaining they can re-run "Generate Videos" after editing the relevant shot's visual or audio text. Edits to shots are still allowed.
 
 Resolution rules:
 - Shot indices are 0-based. Match user references like "shot 2" → index 1, "the first shot" → index 0, "last shot" → index N-1.

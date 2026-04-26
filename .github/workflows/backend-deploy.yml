@@ -67,7 +67,7 @@ jobs:
             --max-instances 10 \
             --memory 1Gi \
             --cpu 1 \
-            --timeout 300 \
+            --timeout 600 \
             --project ${{ env.PROJECT_ID }}
 
       - name: Print deployment URL
