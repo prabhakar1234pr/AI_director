@@ -101,35 +101,22 @@ export default function ScriptPanel() {
       )
     } else {
       body = (
-        <div className="flex flex-col h-full">
-          <div className="flex-shrink-0 flex items-center justify-between px-5 py-1.5 border-b border-border bg-panel/60 backdrop-blur">
-            <div className="flex items-center gap-1.5">
-              <ScrollText className="w-3.5 h-3.5 text-muted-strong" />
-              <span className="text-xs font-medium text-white tracking-tight">
-                Screenplay
-              </span>
-              <span className="text-[11px] text-muted ml-0.5">
-                · {shots.length} shot{shots.length !== 1 ? 's' : ''}
-              </span>
+        <div className="relative h-full overflow-y-auto bg-[#1c1c1c] scrollbar-thin">
+          {showEditor ? (
+            <div className="px-6 py-5">
+              <ScriptEditor />
             </div>
-            <button
-              type="button"
-              onClick={() => setShowEditor((v) => !v)}
-              className="text-[11px] text-muted-strong hover:text-white transition-colors border border-border hover:border-border-strong rounded-md px-2 py-0.5 flex items-center gap-1 font-medium bg-card"
-            >
-              <Code2 className="w-3 h-3" />
-              {showEditor ? 'Screenplay view' : 'Edit JSON'}
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto bg-[#1c1c1c] scrollbar-thin">
-            {showEditor ? (
-              <div className="px-6 py-5">
-                <ScriptEditor />
-              </div>
-            ) : (
-              <CeltxView shots={shots} />
-            )}
-          </div>
+          ) : (
+            <CeltxView shots={shots} />
+          )}
+          <button
+            type="button"
+            onClick={() => setShowEditor((v) => !v)}
+            className="absolute top-2 right-3 z-10 text-[11px] text-muted-strong hover:text-white transition-colors border border-border-strong hover:border-accent/60 rounded-md px-2 py-0.5 flex items-center gap-1 font-medium bg-panel/80 backdrop-blur shadow-lg shadow-black/30"
+          >
+            <Code2 className="w-3 h-3" />
+            {showEditor ? 'Screenplay view' : 'Edit JSON'}
+          </button>
         </div>
       )
     }
@@ -270,7 +257,7 @@ export default function ScriptPanel() {
       </div>
 
       {/* Body — pushed below the floating tabs */}
-      <div className="h-full pt-12">{body}</div>
+      <div className="h-full pt-11">{body}</div>
     </div>
   )
 }

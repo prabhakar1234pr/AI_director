@@ -27,7 +27,7 @@ export default function CeltxView({ shots }) {
   if (!shots?.length) return null
 
   return (
-    <div className="min-h-full py-10 px-6 flex justify-center">
+    <div className="min-h-full py-4 px-6 flex justify-center">
       <article
         className="bg-[#fdfcf7] text-[#1a1a1a] shadow-2xl shadow-black/40 w-full max-w-[8.5in] min-h-[11in] py-[1in] pl-[1.5in] pr-[1in]"
         style={{
