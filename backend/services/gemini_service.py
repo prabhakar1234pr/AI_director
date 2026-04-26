@@ -8,7 +8,7 @@ import httpx
 import google.auth
 from google.auth.transport.requests import Request
 
-from models.schemas import GenerateScriptResponse, Shot
+from models.schemas import ChatContext, GenerateScriptResponse, Shot
 
 DEFAULT_TEXT_MODEL = "gemini-2.5-flash"
 DEFAULT_IMAGE_MODEL = "gemini-2.5-flash-image"
@@ -206,3 +206,108 @@ async def generate_image_for_shot(visual: str, shot_label: str, style: str) -> s
 async def generate_all_images(shots: list[Shot], style: str) -> list[str]:
     tasks = [generate_image_for_shot(s.visual, s.shot, style) for s in shots]
     return await asyncio.gather(*tasks)
+
+
+# ── Cursor-style chat: page-aware tool calling ───────────────────────────
+
+
+CHAT_SYSTEM_PROMPT = """You are an AI Director assistant embedded inside a storyboard app. You behave like Cursor's chat: you know which page the user is on and you take direct ACTIONS on the user's project.
+
+You ALWAYS reply with a single JSON object describing exactly one action. Never include markdown fences, comments, or extra text.
+
+Available actions:
+
+1. {"type": "reply", "reply": "..."}
+   Plain text reply. Use for greetings, questions back, or when the user is just chatting.
+
+2. {"type": "generate_script", "reply": "..."}
+   Trigger fresh script generation from the conversation so far. Use ONLY when there are zero shots and the user has clearly described a scene to storyboard.
+
+3. {"type": "edit_shot", "index": 0, "patch": {"visual": "...", "audio": "...", "shot": "...", "type": "narration|dialogue|action"}, "reply": "..."}
+   Edit one or more fields of an existing shot. Index is 0-based. Only include the fields the user asked to change.
+
+4. {"type": "regenerate_image", "index": 0, "instructions": "...optional extra direction...", "reply": "..."}
+   Re-render the image for one shot. If the user wants visual changes (e.g. "make shot 2 darker"), include the request in `instructions`. The image prompt will combine the existing visual + your instructions.
+
+5. {"type": "add_shot", "after_index": 1, "shot": {"shot": "Close-up", "visual": "...", "audio": "...", "type": "narration"}, "reply": "..."}
+   Insert a new shot after the given index. Use after_index=-1 to prepend at the start.
+
+6. {"type": "delete_shot", "index": 0, "reply": "..."}
+
+7. {"type": "reorder_shots", "order": [2, 0, 1], "reply": "..."}
+   `order` must be a permutation of all current shot indices.
+
+8. {"type": "set_style", "style": "noir", "reply": "..."}
+   Change the global visual style.
+
+Page context rules:
+- "script" page: edits to the script text, adding/removing/reordering shots, or starting a fresh script are appropriate.
+- "visuals" page: regenerate_image is the most likely action when the user comments on a specific shot.
+- "storyboard" page: edits to dialogue/audio shown in panels, or regenerate_image are typical.
+- "narration" page: edits to `audio` text are typical.
+
+Resolution rules:
+- Shot indices are 0-based. Match user references like "shot 2" → index 1, "the first shot" → index 0, "last shot" → index N-1.
+- If the user names a character, mood, or visual element, infer the right shot from the visual/audio fields.
+- If you cannot tell which shot, use a {"type": "reply"} asking which one.
+- Always include a short, friendly `reply` confirming what you did or why you're asking.
+
+Style:
+- Be concise. One or two sentences in `reply`.
+- Never speculate about backend internals. Never describe the JSON itself in the reply.
+"""
+
+
+def _shots_summary(shots: list[Shot]) -> str:
+    if not shots:
+        return "(no shots yet)"
+    lines = []
+    for i, s in enumerate(shots):
+        lines.append(
+            f"[{i}] {s.shot} | type={s.type}\n    visual: {s.visual}\n    audio: {s.audio}"
+        )
+    return "\n".join(lines)
+
+
+async def chat_with_director(messages: list[dict], context: ChatContext) -> dict:
+    project, location = _get_project_and_location()
+    access_token = await _get_access_token()
+    model = os.getenv("GEMINI_TEXT_MODEL", DEFAULT_TEXT_MODEL)
+
+    system = CHAT_SYSTEM_PROMPT
+    system += f"\n\n--- Current project state ---"
+    system += f"\nPage: {context.page}"
+    system += f"\nStyle: {context.style or '(none set)'}"
+    system += f"\nImages generated: {context.has_images}"
+    system += f"\nAudio generated: {context.has_audio}"
+    system += f"\nShots:\n{_shots_summary(context.shots)}"
+
+    contents = [
+        {
+            "role": "user" if m["role"] == "user" else "model",
+            "parts": [{"text": m["content"]}],
+        }
+        for m in messages
+    ]
+
+    payload = {
+        "system_instruction": {"parts": [{"text": system}]},
+        "contents": contents,
+        "generationConfig": {
+            "temperature": 0.4,
+            "maxOutputTokens": 2000,
+            "responseMimeType": "application/json",
+        },
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        resp = await client.post(
+            _vertex_generate_url(project, location, model),
+            headers={"Authorization": f"Bearer {access_token}"},
+            json=payload,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    content = _extract_text_response(data)
+    return _extract_json(content)

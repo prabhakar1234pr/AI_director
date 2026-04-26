@@ -3,14 +3,54 @@
 import { useEffect, useRef, useState } from 'react'
 import { Clapperboard, Send, Sparkles } from 'lucide-react'
 import ChatMessage from './ChatMessage'
+import { useDirectorStore } from '../stores/useDirectorStore'
 
-const EXAMPLE_PROMPTS = [
-  'A detective in a rain-soaked alley at midnight',
-  'An astronaut finds a monolith on Mars at dawn',
-  'Two strangers meet in a Tokyo train station',
-]
+const PAGE_LABEL = {
+  script: 'Script',
+  visuals: 'Visuals',
+  storyboard: 'Storyboard',
+  narration: 'Narration',
+}
 
-export default function ChatPanel({ messages, loading, onSend, compact = false }) {
+const PAGE_PLACEHOLDER = {
+  script: 'Edit the script — "rewrite shot 2 as a close-up", "add a final wide shot", "make the dialogue softer"…',
+  visuals: 'Talk about a shot — "regenerate shot 3 with more rain", "make shot 1 darker"…',
+  storyboard: 'Rearrange or edit panels — "swap shots 1 and 2", "change the dialogue on shot 4"…',
+  narration: 'Tweak narration — "make shot 2 sound more urgent"…',
+}
+
+const PAGE_EMPTY_HINT = {
+  script: [
+    'A detective in a rain-soaked alley at midnight',
+    'An astronaut finds a monolith on Mars at dawn',
+    'Two strangers meet in a Tokyo train station',
+  ],
+  visuals: [
+    'Make shot 1 more dramatic',
+    'Regenerate shot 2 with warmer lighting',
+    'Add more fog to the last shot',
+  ],
+  storyboard: [
+    'Swap shots 1 and 2',
+    'Make the dialogue on shot 3 shorter',
+    'Add a close-up after shot 2',
+  ],
+  narration: [
+    'Make shot 1 sound more urgent',
+    'Rewrite shot 3 narration in past tense',
+  ],
+}
+
+export default function ChatPanel({ compact = false }) {
+  const messages = useDirectorStore((s) => s.messages)
+  const loading = useDirectorStore((s) => s.loading)
+  const sendChat = useDirectorStore((s) => s.sendChat)
+  const step = useDirectorStore((s) => s.step)
+  const shotsLen = useDirectorStore((s) => s.shots.length)
+
+  const page =
+    step === 1 ? 'script' : step === 2 ? 'visuals' : step === 3 ? 'storyboard' : 'narration'
+
   const [input, setInput] = useState('')
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
@@ -30,21 +70,29 @@ export default function ChatPanel({ messages, loading, onSend, compact = false }
     const value = (typeof text === 'string' ? text : input).trim()
     if (!value || loading) return
     setInput('')
-    onSend(value)
+    sendChat(value)
   }
 
-  const isDisabled = loading === 'script'
+  const isDisabled = loading === 'chat' || loading === 'script'
+  const examples = PAGE_EMPTY_HINT[page] || []
 
   return (
     <div className="flex flex-col h-full bg-panel">
       <div className="flex-shrink-0 px-5 py-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-accent" />
-          <h2 className="text-sm font-semibold tracking-tight text-white">Scene Chat</h2>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-accent" />
+            <h2 className="text-sm font-semibold tracking-tight text-white">
+              Director Chat
+            </h2>
+          </div>
+          <span className="text-[10px] uppercase tracking-widest text-muted font-medium px-2 py-0.5 rounded-md bg-card border border-border">
+            on {PAGE_LABEL[page]}
+          </span>
         </div>
         {!compact && (
-          <p className="text-xs text-muted mt-1">
-            Describe what you want to see. The director will reply with shots.
+          <p className="text-xs text-muted mt-1.5 leading-relaxed">
+            I see what you see. Ask me to edit a shot, regenerate an image, or rewrite dialogue.
           </p>
         )}
       </div>
@@ -57,14 +105,16 @@ export default function ChatPanel({ messages, loading, onSend, compact = false }
             </div>
             <div className="space-y-2 max-w-xs">
               <p className="text-base text-white font-medium tracking-tight">
-                Pitch your scene
+                {shotsLen === 0 ? 'Pitch your scene' : `Edit your ${PAGE_LABEL[page].toLowerCase()}`}
               </p>
               <p className="text-sm text-muted-strong leading-relaxed">
-                One sentence is enough. The director will ask follow-ups if it needs more.
+                {shotsLen === 0
+                  ? 'One sentence is enough. The director will ask follow-ups if it needs more.'
+                  : 'Tell me what to change. I\u2019ll edit your shots directly.'}
               </p>
             </div>
             <div className="w-full max-w-xs space-y-2 mt-2">
-              {EXAMPLE_PROMPTS.map((prompt) => (
+              {examples.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
@@ -83,7 +133,7 @@ export default function ChatPanel({ messages, loading, onSend, compact = false }
           <ChatMessage key={i} role={msg.role} content={msg.content} />
         ))}
 
-        {loading === 'script' && (
+        {(loading === 'script' || loading === 'chat') && (
           <div className="flex gap-3 flex-row animate-fade-in">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center mt-0.5">
               <Clapperboard className="w-4 h-4 text-muted-strong" />
@@ -109,7 +159,7 @@ export default function ChatPanel({ messages, loading, onSend, compact = false }
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isDisabled}
-            placeholder="Describe your scene…"
+            placeholder={PAGE_PLACEHOLDER[page]}
             rows={2}
             className="flex-1 resize-none bg-card border border-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-muted focus:outline-none focus:border-accent disabled:opacity-50 disabled:cursor-not-allowed leading-relaxed"
           />

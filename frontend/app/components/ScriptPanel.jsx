@@ -13,25 +13,24 @@ import {
   ScrollText,
 } from 'lucide-react'
 import StepIndicator from './StepIndicator'
-import ScreenplayView from './ScreenplayView'
+import CeltxView from './CeltxView'
 import ScriptEditor from './ScriptEditor'
 import ShotCard from './ShotCard'
+import ComicStoryboard from './ComicStoryboard'
 import SlideshowPlayer from './SlideshowPlayer'
+import { useDirectorStore } from '../stores/useDirectorStore'
 
-export default function ScriptPanel({
-  shots,
-  shotsWithImages,
-  shotsWithAudio,
-  scriptJson,
-  loading,
-  onJsonRawChange,
-  onJsonValidChange,
-  onGenerateImages,
-  onGenerateAudio,
-  step,
-  maxStep,
-  onSetStep,
-}) {
+export default function ScriptPanel() {
+  const shots = useDirectorStore((s) => s.shots)
+  const shotsWithImages = useDirectorStore((s) => s.shotsWithImages)
+  const shotsWithAudio = useDirectorStore((s) => s.shotsWithAudio)
+  const loading = useDirectorStore((s) => s.loading)
+  const step = useDirectorStore((s) => s.step)
+  const setStep = useDirectorStore((s) => s.setStep)
+  const generateImages = useDirectorStore((s) => s.generateImages)
+  const generateAudio = useDirectorStore((s) => s.generateAudio)
+  const maxStep = useDirectorStore((s) => s.maxStep())
+
   const [showEditor, setShowEditor] = useState(false)
 
   const hasShots = shots.length > 0
@@ -39,12 +38,10 @@ export default function ScriptPanel({
   const hasAudio = shotsWithAudio.length > 0
   const isLoading = !!loading
 
-  const imageMap = Object.fromEntries(shotsWithImages.map((s, i) => [i, s.image_b64]))
-
   function Header() {
     return (
       <div className="flex-shrink-0 px-6 py-4 border-b border-border bg-panel/60 backdrop-blur">
-        <StepIndicator currentStep={step} maxStep={maxStep} onGoTo={onSetStep} />
+        <StepIndicator currentStep={step} maxStep={maxStep} onGoTo={setStep} />
       </div>
     )
   }
@@ -64,7 +61,7 @@ export default function ScriptPanel({
                 Your script will appear here
               </h3>
               <p className="text-sm text-muted-strong leading-relaxed">
-                Pitch a scene in the chat panel. The director will turn it into shots you can review and edit.
+                Pitch a scene in the chat panel. The director will turn it into a properly-formatted screenplay.
               </p>
             </div>
           </div>
@@ -74,7 +71,7 @@ export default function ScriptPanel({
               <div className="flex items-center gap-2">
                 <ScrollText className="w-4 h-4 text-muted-strong" />
                 <span className="text-sm font-medium text-white tracking-tight">
-                  Script
+                  Screenplay
                 </span>
                 <span className="text-xs text-muted ml-1">
                   · {shots.length} shot{shots.length !== 1 ? 's' : ''}
@@ -90,22 +87,20 @@ export default function ScriptPanel({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 scrollbar-thin">
+            <div className="flex-1 overflow-y-auto bg-[#1c1c1c] scrollbar-thin">
               {showEditor ? (
-                <ScriptEditor
-                  scriptJson={scriptJson}
-                  onRawChange={onJsonRawChange}
-                  onValidChange={onJsonValidChange}
-                />
+                <div className="px-6 py-5">
+                  <ScriptEditor />
+                </div>
               ) : (
-                <ScreenplayView shots={shots} />
+                <CeltxView shots={shots} />
               )}
             </div>
 
             <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-panel/60">
               <button
                 type="button"
-                onClick={() => onSetStep(2)}
+                onClick={() => setStep(2)}
                 disabled={!hasShots || isLoading}
                 className="w-full h-11 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 shadow-sm shadow-accent/20"
               >
@@ -129,7 +124,7 @@ export default function ScriptPanel({
         <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3">
           <button
             type="button"
-            onClick={() => onSetStep(1)}
+            onClick={() => setStep(1)}
             className="text-sm text-muted-strong hover:text-white transition-colors flex items-center gap-1.5 font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -138,7 +133,7 @@ export default function ScriptPanel({
           <div className="flex-1" />
           <button
             type="button"
-            onClick={onGenerateImages}
+            onClick={generateImages}
             disabled={isLoading}
             className="h-9 px-4 rounded-lg bg-accent hover:bg-accent-hover disabled:bg-card disabled:text-muted disabled:border disabled:border-border disabled:cursor-not-allowed text-sm font-medium text-white transition-colors flex items-center gap-2 shadow-sm shadow-accent/20"
           >
@@ -164,13 +159,7 @@ export default function ScriptPanel({
         <div className="flex-1 overflow-y-auto px-6 py-5 scrollbar-thin">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {shots.map((shot, i) => (
-              <ShotCard
-                key={i}
-                shot={shot}
-                index={i}
-                imageB64={imageMap[i]}
-                loadingImage={loading === 'images'}
-              />
+              <ShotCard key={i} shot={shot} index={i} />
             ))}
           </div>
         </div>
@@ -179,7 +168,7 @@ export default function ScriptPanel({
           <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-panel/60">
             <button
               type="button"
-              onClick={() => onSetStep(3)}
+              onClick={() => setStep(3)}
               className="w-full h-11 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm shadow-accent/20"
             >
               View Storyboard
@@ -199,7 +188,7 @@ export default function ScriptPanel({
         <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onSetStep(2)}
+            onClick={() => setStep(2)}
             className="text-sm text-muted-strong hover:text-white transition-colors flex items-center gap-1.5 font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -208,69 +197,18 @@ export default function ScriptPanel({
           <div className="flex-1" />
           <div className="flex items-center gap-2 text-xs text-muted">
             <Film className="w-4 h-4" />
-            {shots.length} shots
+            {shots.length} panels
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 scrollbar-thin">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {shots.map((shot, i) => (
-              <article
-                key={i}
-                className="flex bg-card rounded-xl border border-border overflow-hidden hover:border-border-strong transition-colors"
-              >
-                <div className="w-40 sm:w-48 flex-shrink-0 aspect-video bg-surface">
-                  {imageMap[i] ? (
-                    <img
-                      src={`data:image/jpeg;base64,${imageMap[i]}`}
-                      alt={`Shot ${i + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted">
-                      <Film className="w-6 h-6 opacity-40" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0 py-3 px-4 space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-white font-mono font-bold tracking-wider text-xs">
-                      SHOT {i + 1}
-                    </span>
-                    <span className="text-muted-strong text-xs font-mono uppercase tracking-wider">
-                      {shot.shot}
-                    </span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded border font-medium uppercase tracking-wider ${
-                        shot.type === 'dialogue'
-                          ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
-                          : shot.type === 'action'
-                          ? 'bg-orange-500/10 text-orange-300 border-orange-500/30'
-                          : 'bg-blue-500/10 text-blue-300 border-blue-500/30'
-                      }`}
-                    >
-                      {shot.type}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-strong leading-relaxed line-clamp-3">
-                    {shot.visual}
-                  </p>
-                  {shot.audio && (
-                    <p className="text-xs text-slate-200 italic leading-relaxed line-clamp-2">
-                      &ldquo;{shot.audio}&rdquo;
-                    </p>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <ComicStoryboard shots={shots} shotsWithImages={shotsWithImages} />
         </div>
 
         <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-panel/60">
           <button
             type="button"
-            onClick={() => onSetStep(4)}
+            onClick={() => setStep(4)}
             className="w-full h-11 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm shadow-accent/20"
           >
             Add Narration
@@ -289,7 +227,7 @@ export default function ScriptPanel({
         <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onSetStep(3)}
+            onClick={() => setStep(3)}
             className="text-sm text-muted-strong hover:text-white transition-colors flex items-center gap-1.5 font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -298,7 +236,7 @@ export default function ScriptPanel({
           <div className="flex-1" />
           <button
             type="button"
-            onClick={onGenerateAudio}
+            onClick={generateAudio}
             disabled={isLoading}
             className="h-9 px-4 rounded-lg bg-accent hover:bg-accent-hover disabled:bg-card disabled:text-muted disabled:border disabled:border-border disabled:cursor-not-allowed text-sm font-medium text-white transition-colors flex items-center gap-2 shadow-sm shadow-accent/20"
           >
@@ -324,10 +262,7 @@ export default function ScriptPanel({
         <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">
           {hasImages ? (
             <div className="max-w-3xl mx-auto">
-              <SlideshowPlayer
-                shotsWithImages={shotsWithImages}
-                shotsWithAudio={hasAudio ? shotsWithAudio : null}
-              />
+              <SlideshowPlayer />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center gap-3 text-muted">

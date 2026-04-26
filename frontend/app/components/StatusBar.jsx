@@ -1,14 +1,20 @@
 'use client'
 
 import { AlertCircle, Loader2, X } from 'lucide-react'
+import { useDirectorStore } from '../stores/useDirectorStore'
 
 const LOADING_MESSAGES = {
   script: 'Director is reading your scene…',
+  chat: 'Thinking…',
   images: 'Generating storyboard visuals — about 20s per shot…',
   audio: 'Recording narration…',
 }
 
-export default function StatusBar({ loading, error, onDismissError }) {
+export default function StatusBar() {
+  const loading = useDirectorStore((s) => s.loading)
+  const error = useDirectorStore((s) => s.error)
+  const clearError = useDirectorStore((s) => s.clearError)
+
   if (!loading && !error) return null
 
   if (error) {
@@ -20,7 +26,7 @@ export default function StatusBar({ loading, error, onDismissError }) {
         <AlertCircle className="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" />
         <div className="flex-1 leading-relaxed">{error}</div>
         <button
-          onClick={onDismissError}
+          onClick={clearError}
           aria-label="Dismiss error"
           className="text-red-300 hover:text-red-100 -mr-1 -mt-1 p-1 rounded transition-colors"
         >

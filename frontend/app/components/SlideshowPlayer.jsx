@@ -2,13 +2,18 @@
 
 import { ChevronLeft, ChevronRight, Pause, Play, Volume2 } from 'lucide-react'
 import { useSlideshow } from '../hooks/useSlideshow'
+import { useDirectorStore } from '../stores/useDirectorStore'
 
-export default function SlideshowPlayer({ shotsWithImages, shotsWithAudio }) {
+export default function SlideshowPlayer() {
+  const shotsWithImages = useDirectorStore((s) => s.shotsWithImages)
+  const shotsWithAudio = useDirectorStore((s) => s.shotsWithAudio)
+  const hasAudio = shotsWithAudio.length > 0
+
+  const audioForHook = hasAudio ? shotsWithAudio : null
   const { currentIndex, isPlaying, play, pause, next, prev, goTo } =
-    useSlideshow(shotsWithAudio)
+    useSlideshow(audioForHook)
 
   const currentShot = shotsWithImages?.[currentIndex]
-  const hasAudio = shotsWithAudio && shotsWithAudio.length > 0
   const total = shotsWithImages?.length || 0
 
   if (!currentShot) return null

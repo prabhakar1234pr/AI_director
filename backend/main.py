@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from routers import script, images, audio
+from routers import script, images, audio, chat
 
 load_dotenv()
 
@@ -23,6 +23,7 @@ app.add_middleware(
 app.include_router(script.router, prefix="/api")
 app.include_router(images.router, prefix="/api")
 app.include_router(audio.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
 
 
 @app.get("/health")

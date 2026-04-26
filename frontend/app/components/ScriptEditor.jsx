@@ -2,8 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { AlertTriangle, Check } from 'lucide-react'
+import { useDirectorStore } from '../stores/useDirectorStore'
 
-export default function ScriptEditor({ scriptJson, onValidChange, onRawChange }) {
+export default function ScriptEditor() {
+  const scriptJson = useDirectorStore((s) => s.scriptJson)
+  const setScriptJsonRaw = useDirectorStore((s) => s.setScriptJsonRaw)
+  const applyValidScript = useDirectorStore((s) => s.applyValidScript)
+
   const [localJson, setLocalJson] = useState(scriptJson)
   const [parseError, setParseError] = useState(null)
 
@@ -15,13 +20,13 @@ export default function ScriptEditor({ scriptJson, onValidChange, onRawChange })
   function handleChange(e) {
     const val = e.target.value
     setLocalJson(val)
-    onRawChange(val)
+    setScriptJsonRaw(val)
 
     try {
       const parsed = JSON.parse(val)
       if (Array.isArray(parsed) && parsed.length > 0) {
         setParseError(null)
-        onValidChange(parsed)
+        applyValidScript(parsed)
       } else {
         setParseError('Must be a non-empty JSON array of shots')
       }
@@ -49,7 +54,7 @@ export default function ScriptEditor({ scriptJson, onValidChange, onRawChange })
       <textarea
         value={localJson}
         onChange={handleChange}
-        rows={12}
+        rows={20}
         spellCheck={false}
         className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-xs text-slate-100 font-mono resize-none focus:outline-none focus:border-accent leading-relaxed"
       />
