@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: ai-director-mvp
+  PROJECT_ID: ai-director-v2
   REGION: us-central1
   REGISTRY: us-central1-docker.pkg.dev
   SERVICE: ai-director-api
-  IMAGE: us-central1-docker.pkg.dev/ai-director-mvp/ai-director-docker/api
-  SA_EMAIL: ai-director-backend@ai-director-mvp.iam.gserviceaccount.com
+  IMAGE: us-central1-docker.pkg.dev/ai-director-v2/ai-director-docker/api
+  SA_EMAIL: ai-director-backend@ai-director-v2.iam.gserviceaccount.com
 
 jobs:
   deploy:
@@ -62,7 +62,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --service-account ${{ env.SA_EMAIL }} \
-            --update-env-vars "ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }},GCP_PROJECT_ID=${{ env.PROJECT_ID }},GCP_LOCATION=${{ env.REGION }},GCP_BUCKET_NAME=ai-director-mvp-media,FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
+            --update-env-vars "ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }},GCP_PROJECT_ID=${{ env.PROJECT_ID }},GCP_LOCATION=${{ env.REGION }},GCP_BUCKET_NAME=ai-director-v2-media,FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
             --min-instances 0 \
             --max-instances 10 \
             --memory 1Gi \
