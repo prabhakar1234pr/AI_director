@@ -45,11 +45,8 @@ export default function ChatPanel({ compact = false }) {
   const messages = useDirectorStore((s) => s.messages)
   const loading = useDirectorStore((s) => s.loading)
   const sendChat = useDirectorStore((s) => s.sendChat)
-  const step = useDirectorStore((s) => s.step)
+  const page = useDirectorStore((s) => s.view)
   const shotsLen = useDirectorStore((s) => s.shots.length)
-
-  const page =
-    step === 1 ? 'script' : step === 2 ? 'visuals' : step === 3 ? 'storyboard' : 'narration'
 
   const [input, setInput] = useState('')
   const bottomRef = useRef(null)

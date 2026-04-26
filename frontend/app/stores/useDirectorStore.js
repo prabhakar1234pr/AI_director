@@ -3,12 +3,7 @@
 import { create } from 'zustand'
 import { API_BASE } from '../utils/constants'
 
-const PAGE_BY_STEP = {
-  1: 'script',
-  2: 'visuals',
-  3: 'storyboard',
-  4: 'narration',
-}
+export const VIEWS = ['script', 'visuals', 'storyboard', 'narration']
 
 const initialState = {
   messages: [],
@@ -19,7 +14,7 @@ const initialState = {
   loading: null,
   error: null,
   style: '',
-  step: 1,
+  view: 'script',
   regeneratingIndices: [],
 }
 
@@ -39,19 +34,11 @@ async function postJson(path, body) {
 export const useDirectorStore = create((set, get) => ({
   ...initialState,
 
-  // ── Computed ─────────────────────────────────────────────────────────────
-
-  page: () => PAGE_BY_STEP[get().step] || 'script',
-  maxStep: () => {
-    const s = get()
-    if (s.shots.length === 0) return 1
-    if (s.shotsWithImages.length === 0) return 2
-    return 4
-  },
-
   // ── Pure setters ─────────────────────────────────────────────────────────
 
-  setStep: (step) => set({ step }),
+  setView: (view) => {
+    if (VIEWS.includes(view)) set({ view })
+  },
   setStyle: (style) => set({ style }),
   setError: (error) => set({ error }),
   clearError: () => set({ error: null }),
@@ -164,7 +151,7 @@ export const useDirectorStore = create((set, get) => ({
 
     const s = get()
     const context = {
-      page: PAGE_BY_STEP[s.step] || 'script',
+      page: s.view,
       shots: s.shots,
       style: s.style || null,
       has_images: s.shotsWithImages.length > 0,
@@ -284,4 +271,9 @@ export const useDirectorStore = create((set, get) => ({
   },
 }))
 
-export { PAGE_BY_STEP }
+export const VIEW_LABEL = {
+  script: 'Script',
+  visuals: 'Visuals',
+  storyboard: 'Storyboard',
+  narration: 'Narration',
+}
