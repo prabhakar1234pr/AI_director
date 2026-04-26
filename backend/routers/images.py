@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import GenerateImagesRequest, GenerateImagesResponse, ShotWithImage
-from services.minimax_service import generate_all_images
+from services.gemini_service import generate_all_images
 
 router = APIRouter()
 

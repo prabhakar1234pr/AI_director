@@ -10,11 +10,11 @@ class Shot(BaseModel):
 
 
 class ShotWithImage(Shot):
-    image_b64: str  # base64 PNG from MiniMax
+    image_b64: str  # base64 image from Gemini
 
 
 class ShotWithAudio(Shot):
-    audio_b64: str  # base64 MP3 from ElevenLabs
+    audio_b64: str  # base64 MP3 from gTTS
 
 
 class ChatMessage(BaseModel):

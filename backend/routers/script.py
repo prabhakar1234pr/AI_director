@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import GenerateScriptRequest, GenerateScriptResponse
-from services.minimax_service import generate_script
+from services.gemini_service import generate_script
 
 router = APIRouter()
 

@@ -62,7 +62,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --service-account ${{ env.SA_EMAIL }} \
-            --update-env-vars "MINIMAX_API_KEY=${{ secrets.MINIMAX_API_KEY }},MINIMAX_GROUP_ID=${{ secrets.MINIMAX_GROUP_ID }},ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }},GCP_PROJECT_ID=${{ env.PROJECT_ID }},GCP_BUCKET_NAME=ai-director-mvp-media,FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
+            --update-env-vars "ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }},GCP_PROJECT_ID=${{ env.PROJECT_ID }},GCP_LOCATION=${{ env.REGION }},GCP_BUCKET_NAME=ai-director-mvp-media,FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
             --min-instances 0 \
             --max-instances 10 \
             --memory 1Gi \
