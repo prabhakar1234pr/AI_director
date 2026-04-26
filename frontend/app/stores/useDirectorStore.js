@@ -1,9 +1,47 @@
 'use client'
 
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { API_BASE } from '../utils/constants'
 
 export const VIEWS = ['script', 'visuals', 'storyboard', 'narration']
+
+const STORAGE_KEY = 'ai-director-store'
+const STORAGE_VERSION = 1
+
+// Wraps localStorage so quota errors (large base64 images) don't break the
+// store: on first failure we retry with images/audio stripped, then give up.
+function createSafeLocalStorage() {
+  if (typeof window === 'undefined') return undefined
+  return {
+    getItem: (name) => {
+      try { return window.localStorage.getItem(name) } catch { return null }
+    },
+    setItem: (name, value) => {
+      try {
+        window.localStorage.setItem(name, value)
+      } catch {
+        try {
+          const parsed = JSON.parse(value)
+          if (parsed?.state) {
+            parsed.state.shotsWithImages = []
+            parsed.state.shotsWithAudio = []
+            window.localStorage.setItem(name, JSON.stringify(parsed))
+            // eslint-disable-next-line no-console
+            console.warn(
+              '[ai-director] localStorage quota exceeded; image data was not persisted.'
+            )
+          }
+        } catch {
+          /* give up silently */
+        }
+      }
+    },
+    removeItem: (name) => {
+      try { window.localStorage.removeItem(name) } catch { /* ignore */ }
+    },
+  }
+}
 
 const initialState = {
   messages: [],
@@ -31,7 +69,9 @@ async function postJson(path, body) {
   return res.json()
 }
 
-export const useDirectorStore = create((set, get) => ({
+export const useDirectorStore = create(
+  persist(
+    (set, get) => ({
   ...initialState,
 
   // ── Pure setters ─────────────────────────────────────────────────────────
@@ -269,7 +309,28 @@ export const useDirectorStore = create((set, get) => ({
     set({ shotsWithAudio: shots })
     set({ loading: null })
   },
-}))
+    }),
+    {
+      name: STORAGE_KEY,
+      version: STORAGE_VERSION,
+      storage: createJSONStorage(createSafeLocalStorage),
+      // Defer rehydration until after the client mounts so we never produce
+      // a hydration mismatch with the server-rendered HTML.
+      skipHydration: true,
+      // Only persist real state; skip transient flags (loading, error,
+      // regeneratingIndices) so a stale "loading" never sticks across reloads.
+      partialize: (state) => ({
+        messages: state.messages,
+        shots: state.shots,
+        scriptJson: state.scriptJson,
+        shotsWithImages: state.shotsWithImages,
+        shotsWithAudio: state.shotsWithAudio,
+        style: state.style,
+        view: state.view,
+      }),
+    }
+  )
+)
 
 export const VIEW_LABEL = {
   script: 'Script',
