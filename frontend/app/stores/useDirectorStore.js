@@ -2,44 +2,38 @@
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval'
 import { API_BASE } from '../utils/constants'
 
 export const VIEWS = ['script', 'visuals', 'storyboard', 'narration', 'video']
 
 const STORAGE_KEY = 'ai-director-store'
-const STORAGE_VERSION = 1
+const STORAGE_VERSION = 2
 
-// Wraps localStorage so quota errors (large base64 images) don't break the
-// store: on first failure we retry with images/audio stripped, then give up.
-function createSafeLocalStorage() {
+// IndexedDB-backed storage. localStorage's ~5–10 MB quota cannot hold base64
+// images / audio / Veo MP4s. IndexedDB gets us hundreds of MB to GBs per
+// origin, so the full media state can survive a refresh.
+function createIDBStorage() {
   if (typeof window === 'undefined') return undefined
   return {
-    getItem: (name) => {
-      try { return window.localStorage.getItem(name) } catch { return null }
-    },
-    setItem: (name, value) => {
+    getItem: async (name) => {
       try {
-        window.localStorage.setItem(name, value)
+        const value = await idbGet(name)
+        return value ?? null
       } catch {
-      try {
-        const parsed = JSON.parse(value)
-        if (parsed?.state) {
-          parsed.state.shotsWithImages = []
-          parsed.state.shotsWithAudio = []
-          parsed.state.shotsWithVideos = []
-          window.localStorage.setItem(name, JSON.stringify(parsed))
-          // eslint-disable-next-line no-console
-          console.warn(
-            '[ai-director] localStorage quota exceeded; media payloads were not persisted.'
-          )
-        }
-      } catch {
-        /* give up silently */
-      }
+        return null
       }
     },
-    removeItem: (name) => {
-      try { window.localStorage.removeItem(name) } catch { /* ignore */ }
+    setItem: async (name, value) => {
+      try {
+        await idbSet(name, value)
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[ai-director] IndexedDB write failed:', err)
+      }
+    },
+    removeItem: async (name) => {
+      try { await idbDel(name) } catch { /* ignore */ }
     },
   }
 }
@@ -348,7 +342,7 @@ export const useDirectorStore = create(
     {
       name: STORAGE_KEY,
       version: STORAGE_VERSION,
-      storage: createJSONStorage(createSafeLocalStorage),
+      storage: createJSONStorage(createIDBStorage),
       // Defer rehydration until after the client mounts so we never produce
       // a hydration mismatch with the server-rendered HTML.
       skipHydration: true,
@@ -360,6 +354,7 @@ export const useDirectorStore = create(
         scriptJson: state.scriptJson,
         shotsWithImages: state.shotsWithImages,
         shotsWithAudio: state.shotsWithAudio,
+        shotsWithVideos: state.shotsWithVideos,
         style: state.style,
         view: state.view,
       }),

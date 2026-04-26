@@ -1,0 +1,30 @@
+feat: add AI Video step powered by Veo 3 Fast (image-to-video)
+
+Adds a fifth view "AI Video" after Narration. The user clicks Generate
+Videos and the backend runs Vertex AI Veo 3 Fast per shot, using the
+existing storyboard image as the first frame so the clip stays visually
+consistent with the storyboard. Each clip is 8s and includes Veo's
+native generated audio.
+
+Backend
+- New `services/veo_service.py`: submits a long-running prediction per
+  shot, polls the operation, returns base64 MP4. Handles a few possible
+  Veo response shapes. Concurrency capped at 2 parallel ops.
+- New `routers/video.py` exposing `POST /generate-videos`.
+- `models/schemas.py`: `ShotWithVideo`, `GenerateVideosRequest/Response`,
+  and a new "video" PageId so the chat understands the page context.
+- `gemini_service.CHAT_SYSTEM_PROMPT` updated with rules for the video
+  page (no per-clip regeneration yet — gracefully tells the user to
+  re-render after editing the shot).
+- `main.py` wires the new router.
+- Cloud Run timeout bumped 300s -> 600s in the deploy workflow because
+  rendering 4 clips with concurrency=2 takes 2-4 minutes total.
+
+Frontend
+- Store: `shotsWithVideos` + `generateVideos` action, `video` added to
+  VIEWS / VIEW_LABEL. Videos are NOT persisted (too big), but quota
+  guard now strips them too if they ever sneak in.
+- New `VideoSlideshow.jsx` plays the per-shot MP4s with auto-advance.
+- `ScriptPanel.jsx` gets a new `video` view + tab with a Generate
+  Videos button (disabled until visuals exist) and a 2-5 min progress
+  state.

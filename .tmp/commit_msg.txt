@@ -1,0 +1,10 @@
+fix(gemini): make token expiry timezone-aware (500 on /api/generate-images)
+
+google-auth populates credentials.expiry as a naive datetime in UTC.
+Comparing it against datetime.now(timezone.utc) (aware) raised
+"can't compare offset-naive and offset-aware datetimes" the next
+time the token cache was checked, surfacing as a 500 from
+/api/generate-images.
+
+Attach UTC tzinfo to the naive expiry before caching so subsequent
+_token_is_valid() comparisons stay homogeneous.
