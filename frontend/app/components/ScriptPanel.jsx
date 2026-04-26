@@ -30,7 +30,7 @@ function ViewTabs() {
   const setView = useDirectorStore((s) => s.setView)
 
   return (
-    <div className="inline-flex items-center gap-1 p-1 rounded-2xl bg-panel/80 backdrop-blur border border-border-strong shadow-xl shadow-black/30">
+    <div className="inline-flex items-center gap-0.5 p-0.5 rounded-xl bg-panel/80 backdrop-blur border border-border-strong shadow-lg shadow-black/30">
       {VIEWS.map((v) => {
         const Icon = VIEW_ICON[v]
         const active = view === v
@@ -39,13 +39,13 @@ function ViewTabs() {
             key={v}
             type="button"
             onClick={() => setView(v)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
               active
-                ? 'bg-accent text-white shadow-md shadow-accent/30'
+                ? 'bg-accent text-white shadow-sm shadow-accent/30'
                 : 'text-muted-strong hover:text-white hover:bg-card'
             }`}
           >
-            <Icon className="w-4 h-4" />
+            <Icon className="w-3.5 h-3.5" />
             {VIEW_LABEL[v]}
           </button>
         )
@@ -102,22 +102,22 @@ export default function ScriptPanel() {
     } else {
       body = (
         <div className="flex flex-col h-full">
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-border bg-panel/60 backdrop-blur">
-            <div className="flex items-center gap-2">
-              <ScrollText className="w-4 h-4 text-muted-strong" />
-              <span className="text-sm font-medium text-white tracking-tight">
+          <div className="flex-shrink-0 flex items-center justify-between px-5 py-1.5 border-b border-border bg-panel/60 backdrop-blur">
+            <div className="flex items-center gap-1.5">
+              <ScrollText className="w-3.5 h-3.5 text-muted-strong" />
+              <span className="text-xs font-medium text-white tracking-tight">
                 Screenplay
               </span>
-              <span className="text-xs text-muted ml-1">
+              <span className="text-[11px] text-muted ml-0.5">
                 · {shots.length} shot{shots.length !== 1 ? 's' : ''}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setShowEditor((v) => !v)}
-              className="text-xs text-muted-strong hover:text-white transition-colors border border-border hover:border-border-strong rounded-md px-2.5 py-1 flex items-center gap-1.5 font-medium bg-card"
+              className="text-[11px] text-muted-strong hover:text-white transition-colors border border-border hover:border-border-strong rounded-md px-2 py-0.5 flex items-center gap-1 font-medium bg-card"
             >
-              <Code2 className="w-3.5 h-3.5" />
+              <Code2 className="w-3 h-3" />
               {showEditor ? 'Screenplay view' : 'Edit JSON'}
             </button>
           </div>
@@ -145,13 +145,13 @@ export default function ScriptPanel() {
     } else {
       body = (
         <div className="flex flex-col h-full">
-          <div className="flex-shrink-0 px-6 py-3 border-b border-border bg-panel/60 backdrop-blur flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-muted-strong" />
-              <span className="text-sm font-medium text-white tracking-tight">
+          <div className="flex-shrink-0 px-5 py-1.5 border-b border-border bg-panel/60 backdrop-blur flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5 text-muted-strong" />
+              <span className="text-xs font-medium text-white tracking-tight">
                 Visuals
               </span>
-              <span className="text-xs text-muted ml-1">
+              <span className="text-[11px] text-muted ml-0.5">
                 · {hasImages ? `${shotsWithImages.length} of ${shots.length}` : `${shots.length} pending`}
               </span>
             </div>
@@ -160,21 +160,21 @@ export default function ScriptPanel() {
               type="button"
               onClick={generateImages}
               disabled={isLoading}
-              className="h-9 px-4 rounded-lg bg-accent hover:bg-accent-hover disabled:bg-card disabled:text-muted disabled:border disabled:border-border disabled:cursor-not-allowed text-sm font-medium text-white transition-colors flex items-center gap-2 shadow-sm shadow-accent/20"
+              className="h-7 px-3 rounded-md bg-accent hover:bg-accent-hover disabled:bg-card disabled:text-muted disabled:border disabled:border-border disabled:cursor-not-allowed text-xs font-medium text-white transition-colors flex items-center gap-1.5 shadow-sm shadow-accent/20"
             >
               {loading === 'images' ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Generating…
                 </>
               ) : hasImages ? (
                 <>
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-3.5 h-3.5" />
                   Regenerate All
                 </>
               ) : (
                 <>
-                  <ImageIcon className="w-4 h-4" />
+                  <ImageIcon className="w-3.5 h-3.5" />
                   Generate Visuals
                 </>
               )}
@@ -218,10 +218,10 @@ export default function ScriptPanel() {
     } else {
       body = (
         <div className="flex flex-col h-full">
-          <div className="flex-shrink-0 px-6 py-3 border-b border-border bg-panel/60 backdrop-blur flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Mic className="w-4 h-4 text-muted-strong" />
-              <span className="text-sm font-medium text-white tracking-tight">
+          <div className="flex-shrink-0 px-5 py-1.5 border-b border-border bg-panel/60 backdrop-blur flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Mic className="w-3.5 h-3.5 text-muted-strong" />
+              <span className="text-xs font-medium text-white tracking-tight">
                 Narration
               </span>
             </div>
@@ -230,21 +230,21 @@ export default function ScriptPanel() {
               type="button"
               onClick={generateAudio}
               disabled={isLoading}
-              className="h-9 px-4 rounded-lg bg-accent hover:bg-accent-hover disabled:bg-card disabled:text-muted disabled:border disabled:border-border disabled:cursor-not-allowed text-sm font-medium text-white transition-colors flex items-center gap-2 shadow-sm shadow-accent/20"
+              className="h-7 px-3 rounded-md bg-accent hover:bg-accent-hover disabled:bg-card disabled:text-muted disabled:border disabled:border-border disabled:cursor-not-allowed text-xs font-medium text-white transition-colors flex items-center gap-1.5 shadow-sm shadow-accent/20"
             >
               {loading === 'audio' ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Recording…
                 </>
               ) : hasAudio ? (
                 <>
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-3.5 h-3.5" />
                   Re-record
                 </>
               ) : (
                 <>
-                  <Mic className="w-4 h-4" />
+                  <Mic className="w-3.5 h-3.5" />
                   Generate Audio
                 </>
               )}
@@ -263,14 +263,14 @@ export default function ScriptPanel() {
   return (
     <div className="relative h-full">
       {/* Floating view tabs — pinned to top, centered */}
-      <div className="pointer-events-none absolute top-5 inset-x-0 flex justify-center z-20">
+      <div className="pointer-events-none absolute top-3 inset-x-0 flex justify-center z-20">
         <div className="pointer-events-auto">
           <ViewTabs />
         </div>
       </div>
 
       {/* Body — pushed below the floating tabs */}
-      <div className="h-full pt-[72px]">{body}</div>
+      <div className="h-full pt-12">{body}</div>
     </div>
   )
 }

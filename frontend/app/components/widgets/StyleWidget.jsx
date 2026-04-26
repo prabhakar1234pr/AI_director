@@ -35,18 +35,18 @@ export default function StyleWidget() {
   return (
     <div
       ref={containerRef}
-      className="absolute top-5 right-5 z-30 animate-fade-in"
+      className="absolute top-3 right-3 z-30 animate-fade-in"
     >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`h-10 px-3.5 rounded-2xl backdrop-blur border shadow-xl shadow-black/30 text-sm transition-colors flex items-center gap-2 font-medium max-w-[240px] ${
+        className={`h-8 px-2.5 rounded-xl backdrop-blur border shadow-lg shadow-black/30 text-xs transition-colors flex items-center gap-1.5 font-medium max-w-[220px] ${
           style
             ? 'bg-accent/15 border-accent/40 text-white hover:bg-accent/20'
             : 'bg-panel/80 border-border-strong text-muted-strong hover:text-white hover:border-accent/60'
         }`}
       >
-        <Palette className="w-4 h-4 flex-shrink-0" />
+        <Palette className="w-3.5 h-3.5 flex-shrink-0" />
         <span className="truncate">{style || 'Visual style'}</span>
       </button>
 
