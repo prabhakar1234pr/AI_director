@@ -11,35 +11,88 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background-color: #0a0b0f;
-  color: #f1f5f9;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #0b0d14;
+  color: #e6e9f2;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #252840;
-  border-radius: 3px;
+  background: #2a2f45;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6366f1;
+  background: #3a405c;
+  background-clip: padding-box;
 }
 
-/* Smooth transitions */
-* {
-  transition-property: color, background-color, border-color, opacity;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
-/* Prevent transition on layout */
-.no-transition,
-.no-transition * {
-  transition: none !important;
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.5);
+}
+
+::selection {
+  background: rgba(129, 140, 248, 0.3);
+  color: #ffffff;
+}
+
+@layer utilities {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(42, 47, 69, 0.4) 0%,
+      rgba(58, 64, 92, 0.6) 50%,
+      rgba(42, 47, 69, 0.4) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

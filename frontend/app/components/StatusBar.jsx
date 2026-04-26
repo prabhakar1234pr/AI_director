@@ -1,9 +1,11 @@
 'use client'
 
+import { AlertCircle, Loader2, X } from 'lucide-react'
+
 const LOADING_MESSAGES = {
-  script: 'Director is reading your scene...',
-  images: 'Generating storyboard visuals — this takes ~20s per shot...',
-  audio: 'Recording narration...',
+  script: 'Director is reading your scene…',
+  images: 'Generating storyboard visuals — about 20s per shot…',
+  audio: 'Recording narration…',
 }
 
 export default function StatusBar({ loading, error, onDismissError }) {
@@ -11,29 +13,31 @@ export default function StatusBar({ loading, error, onDismissError }) {
 
   if (error) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 bg-red-950 border-b border-red-800 px-4 py-3 text-sm text-red-200">
-        <div className="flex items-center gap-2">
-          <span className="text-red-400">⚠</span>
-          <span>{error}</span>
-        </div>
+      <div
+        role="alert"
+        className="fixed bottom-6 right-6 z-50 max-w-md flex items-start gap-3 bg-red-950/95 backdrop-blur border border-red-800/80 shadow-2xl shadow-red-950/40 rounded-xl px-4 py-3 text-sm text-red-100 animate-slide-down"
+      >
+        <AlertCircle className="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" />
+        <div className="flex-1 leading-relaxed">{error}</div>
         <button
           onClick={onDismissError}
-          className="text-red-400 hover:text-red-200 text-lg leading-none px-1"
+          aria-label="Dismiss error"
+          className="text-red-300 hover:text-red-100 -mr-1 -mt-1 p-1 rounded transition-colors"
         >
-          ×
+          <X className="w-4 h-4" />
         </button>
       </div>
     )
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 flex items-center gap-3 bg-panel border-b border-border px-4 py-3 text-sm text-slate-300">
-      <span className="flex gap-1">
-        <span className="animate-bounce" style={{ animationDelay: '0ms' }}>●</span>
-        <span className="animate-bounce" style={{ animationDelay: '150ms' }}>●</span>
-        <span className="animate-bounce" style={{ animationDelay: '300ms' }}>●</span>
-      </span>
-      <span>{LOADING_MESSAGES[loading] || 'Processing...'}</span>
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-panel/95 backdrop-blur border border-border-strong shadow-2xl shadow-black/40 rounded-xl px-4 py-3 text-sm text-muted-strong animate-slide-down"
+    >
+      <Loader2 className="w-4 h-4 text-accent animate-spin flex-shrink-0" />
+      <span>{LOADING_MESSAGES[loading] || 'Processing…'}</span>
     </div>
   )
 }
