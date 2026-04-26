@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Clapperboard, Send, Sparkles } from 'lucide-react'
+import { Clapperboard, Image as ImageIcon, Send, Sparkles, X } from 'lucide-react'
 import ChatMessage from './ChatMessage'
 import { useDirectorStore } from '../stores/useDirectorStore'
 
@@ -40,6 +40,16 @@ export default function ChatPanel({ compact = false }) {
   const sendChat = useDirectorStore((s) => s.sendChat)
   const page = useDirectorStore((s) => s.view)
   const shotsLen = useDirectorStore((s) => s.shots.length)
+  const attachedShotIndex = useDirectorStore((s) => s.attachedShotIndex)
+  const clearAttachedShot = useDirectorStore((s) => s.clearAttachedShot)
+  const attachedShot = useDirectorStore((s) =>
+    s.attachedShotIndex !== null ? s.shots[s.attachedShotIndex] : null
+  )
+  const attachedImageB64 = useDirectorStore((s) =>
+    s.attachedShotIndex !== null
+      ? s.shotsWithImages[s.attachedShotIndex]?.image_b64
+      : null
+  )
 
   const [input, setInput] = useState('')
   const bottomRef = useRef(null)
@@ -118,7 +128,7 @@ export default function ChatPanel({ compact = false }) {
         )}
 
         {messages.map((msg, i) => (
-          <ChatMessage key={i} role={msg.role} content={msg.content} />
+          <ChatMessage key={i} {...msg} />
         ))}
 
         {(loading === 'script' || loading === 'chat') && (
@@ -140,6 +150,43 @@ export default function ChatPanel({ compact = false }) {
       </div>
 
       <div className="flex-shrink-0 px-5 py-4 border-t border-border">
+        {attachedShotIndex !== null && (
+          <div className="mb-2.5 flex items-center gap-2.5 bg-accent/10 border border-accent/40 rounded-xl px-2.5 py-2 animate-fade-in">
+            {attachedImageB64 ? (
+              <img
+                src={`data:image/jpeg;base64,${attachedImageB64}`}
+                alt={`Shot ${attachedShotIndex + 1} thumbnail`}
+                className="w-10 h-10 rounded-md object-cover border border-border-strong flex-shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-md bg-card border border-border-strong flex items-center justify-center flex-shrink-0">
+                <ImageIcon className="w-4 h-4 text-muted-strong" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-white tracking-tight">
+                Shot {attachedShotIndex + 1} attached
+                {attachedShot?.shot ? (
+                  <span className="text-muted-strong font-normal">
+                    {' · '}
+                    {attachedShot.shot}
+                  </span>
+                ) : null}
+              </p>
+              <p className="text-[11px] text-muted leading-snug truncate">
+                Describe a change — I&apos;ll regenerate this image with your direction.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={clearAttachedShot}
+              aria-label="Remove attached shot"
+              className="flex-shrink-0 w-6 h-6 rounded-md text-muted-strong hover:text-white hover:bg-card transition-colors flex items-center justify-center"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         <div className="flex gap-2 items-end">
           <textarea
             ref={textareaRef}
@@ -148,7 +195,12 @@ export default function ChatPanel({ compact = false }) {
             onKeyDown={handleKeyDown}
             disabled={isDisabled}
             rows={2}
-            className="flex-1 resize-none bg-card border border-border rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-accent disabled:opacity-50 disabled:cursor-not-allowed leading-relaxed"
+            placeholder={
+              attachedShotIndex !== null
+                ? `e.g. make it darker, add fog, warmer lighting…`
+                : undefined
+            }
+            className="flex-1 resize-none bg-card border border-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-muted focus:outline-none focus:border-accent disabled:opacity-50 disabled:cursor-not-allowed leading-relaxed"
           />
           <button
             type="button"

@@ -1,6 +1,6 @@
 'use client'
 
-import { Film, RotateCcw } from 'lucide-react'
+import { Film, MessageSquarePlus, RotateCcw } from 'lucide-react'
 import { useDirectorStore } from '../stores/useDirectorStore'
 
 const TYPE_STYLES = {
@@ -18,6 +18,8 @@ export default function ShotCard({ shot, index, isActive }) {
     s.regeneratingIndices.includes(index)
   )
   const regenerateImage = useDirectorStore((s) => s.regenerateImage)
+  const attachShotToChat = useDirectorStore((s) => s.attachShotToChat)
+  const isAttached = useDirectorStore((s) => s.attachedShotIndex === index)
 
   const typeClass = TYPE_STYLES[shot.type] || TYPE_STYLES.narration
   const isLoading = loadingAll || isRegenerating
@@ -68,15 +70,35 @@ export default function ShotCard({ shot, index, isActive }) {
         </div>
 
         {imageB64 && !isRegenerating && (
-          <button
-            type="button"
-            onClick={() => regenerateImage(index, null)}
-            aria-label={`Regenerate shot ${index + 1}`}
-            className="absolute top-2.5 right-2.5 bg-black/75 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md hover:bg-black/95 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100"
+          <div
+            className={`absolute top-2.5 right-2.5 flex items-center gap-1.5 transition-opacity ${
+              isAttached ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}
           >
-            <RotateCcw className="w-3 h-3" />
-            Redo
-          </button>
+            <button
+              type="button"
+              onClick={() => attachShotToChat(index)}
+              aria-label={`Add shot ${index + 1} to chat`}
+              title="Send this shot to chat and ask for a change"
+              className={`text-xs px-2 py-1 rounded-md backdrop-blur-sm transition-colors flex items-center gap-1 ${
+                isAttached
+                  ? 'bg-accent text-white shadow-sm shadow-accent/30'
+                  : 'bg-black/75 text-white hover:bg-black/95'
+              }`}
+            >
+              <MessageSquarePlus className="w-3 h-3" />
+              {isAttached ? 'In chat' : 'Add to chat'}
+            </button>
+            <button
+              type="button"
+              onClick={() => regenerateImage(index, null)}
+              aria-label={`Regenerate shot ${index + 1}`}
+              className="bg-black/75 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md hover:bg-black/95 transition-colors flex items-center gap-1"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Redo
+            </button>
+          </div>
         )}
       </div>
 

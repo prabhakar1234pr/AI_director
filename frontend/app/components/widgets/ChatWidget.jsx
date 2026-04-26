@@ -8,6 +8,7 @@ import { useDirectorStore } from '../../stores/useDirectorStore'
 export default function ChatWidget() {
   const messagesLen = useDirectorStore((s) => s.messages.length)
   const loading = useDirectorStore((s) => s.loading)
+  const attachedShotIndex = useDirectorStore((s) => s.attachedShotIndex)
 
   // Auto-open the first time the user has nothing yet (so they know where chat is).
   const [open, setOpen] = useState(true)
@@ -22,6 +23,12 @@ export default function ChatWidget() {
       setUnread(Math.max(0, messagesLen - lastSeen))
     }
   }, [messagesLen, open, lastSeen])
+
+  // Pop the drawer open whenever the user attaches a shot from the visuals
+  // grid, so they can immediately type their change.
+  useEffect(() => {
+    if (attachedShotIndex !== null) setOpen(true)
+  }, [attachedShotIndex])
 
   const isWorking = loading === 'chat' || loading === 'script'
 

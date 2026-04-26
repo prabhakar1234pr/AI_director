@@ -8,7 +8,7 @@ import { API_BASE } from '../utils/constants'
 export const VIEWS = ['script', 'visuals', 'storyboard', 'narration', 'video']
 
 const STORAGE_KEY = 'ai-director-store'
-const STORAGE_VERSION = 2
+const STORAGE_VERSION = 3
 
 // IndexedDB-backed storage. localStorage's ~5–10 MB quota cannot hold base64
 // images / audio / Veo MP4s. IndexedDB gets us hundreds of MB to GBs per
@@ -50,6 +50,14 @@ const initialState = {
   style: '',
   view: 'script',
   regeneratingIndices: [],
+  attachedShotIndex: null,
+  // Storyboard customisations.
+  // storyboardOverrides: per-shot manual placement: { [index]: { top, left } }
+  //   where top/left are percentages (0–100) of the panel.
+  // storyboardLayoutVariants: per panel count, which preset variant index is
+  //   selected: { [count]: variantIndex }.
+  storyboardOverrides: {},
+  storyboardLayoutVariants: {},
 }
 
 async function postJson(path, body) {
@@ -79,6 +87,40 @@ export const useDirectorStore = create(
   setError: (error) => set({ error }),
   clearError: () => set({ error: null }),
   reset: () => set({ ...initialState }),
+
+  attachShotToChat: (index) => {
+    const shots = get().shots
+    if (index < 0 || index >= shots.length) return
+    set({ attachedShotIndex: index, view: get().view })
+  },
+  clearAttachedShot: () => set({ attachedShotIndex: null }),
+
+  // Storyboard: persist a manual {top, left} (in %) for one shot's overlay box.
+  setStoryboardOverride: (index, override) => {
+    const next = { ...get().storyboardOverrides }
+    if (override === null || override === undefined) {
+      delete next[index]
+    } else {
+      next[index] = override
+    }
+    set({ storyboardOverrides: next })
+  },
+  clearStoryboardOverride: (index) => {
+    const next = { ...get().storyboardOverrides }
+    delete next[index]
+    set({ storyboardOverrides: next })
+  },
+
+  // Storyboard: choose which preset layout variant to use for the current
+  // shot count.
+  setStoryboardLayoutVariant: (count, variantIndex) => {
+    set({
+      storyboardLayoutVariants: {
+        ...get().storyboardLayoutVariants,
+        [count]: variantIndex,
+      },
+    })
+  },
 
   setScriptJsonRaw: (raw) => set({ scriptJson: raw }),
   applyValidScript: (parsed) =>
@@ -113,17 +155,27 @@ export const useDirectorStore = create(
       shotsWithImages: [],
       shotsWithAudio: [],
       shotsWithVideos: [],
+      storyboardOverrides: {},
     })
   },
 
   deleteShot: (index) => {
     const shots = get().shots.filter((_, i) => i !== index)
+    // Drop the override for the removed index and shift any larger keys down.
+    const overrides = get().storyboardOverrides
+    const nextOverrides = {}
+    for (const [k, v] of Object.entries(overrides)) {
+      const i = Number(k)
+      if (i < index) nextOverrides[i] = v
+      else if (i > index) nextOverrides[i - 1] = v
+    }
     set({
       shots,
       scriptJson: JSON.stringify(shots, null, 2),
       shotsWithImages: get().shotsWithImages.filter((_, i) => i !== index),
       shotsWithAudio: get().shotsWithAudio.filter((_, i) => i !== index),
       shotsWithVideos: get().shotsWithVideos.filter((_, i) => i !== index),
+      storyboardOverrides: nextOverrides,
     })
   },
 
@@ -133,12 +185,19 @@ export const useDirectorStore = create(
     const newShots = order.map((i) => shots[i])
     const reorderedOr = (arr) =>
       arr.length === shots.length ? order.map((i) => arr[i]) : []
+    // Remap overrides through `order`: new index i holds whatever was at order[i].
+    const overrides = get().storyboardOverrides
+    const nextOverrides = {}
+    order.forEach((oldIndex, newIndex) => {
+      if (overrides[oldIndex]) nextOverrides[newIndex] = overrides[oldIndex]
+    })
     set({
       shots: newShots,
       scriptJson: JSON.stringify(newShots, null, 2),
       shotsWithImages: reorderedOr(shotsWithImages),
       shotsWithAudio: reorderedOr(shotsWithAudio),
       shotsWithVideos: reorderedOr(shotsWithVideos),
+      storyboardOverrides: nextOverrides,
     })
   },
 
@@ -185,6 +244,35 @@ export const useDirectorStore = create(
   // ── API: cursor-style chat ───────────────────────────────────────────────
 
   sendChat: async (text) => {
+    // Fast path: if the user explicitly attached a shot from the visuals
+    // grid, skip the LLM entirely and regenerate that shot's image with the
+    // user's text as the extra direction. The index is unambiguous, so we
+    // don't need the model to figure it out.
+    const attached = get().attachedShotIndex
+    if (attached !== null) {
+      const userMsg = {
+        role: 'user',
+        content: text,
+        attachedShotIndex: attached,
+      }
+      set({
+        messages: [...get().messages, userMsg],
+        attachedShotIndex: null,
+        error: null,
+      })
+      set({
+        messages: [
+          ...get().messages,
+          {
+            role: 'assistant',
+            content: `Regenerating shot ${attached + 1} with your changes…`,
+          },
+        ],
+      })
+      await get().regenerateImage(attached, text)
+      return
+    }
+
     const userMsg = { role: 'user', content: text }
     set({ messages: [...get().messages, userMsg], error: null })
 
@@ -357,6 +445,8 @@ export const useDirectorStore = create(
         shotsWithVideos: state.shotsWithVideos,
         style: state.style,
         view: state.view,
+        storyboardOverrides: state.storyboardOverrides,
+        storyboardLayoutVariants: state.storyboardLayoutVariants,
       }),
     }
   )
