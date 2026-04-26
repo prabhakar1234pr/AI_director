@@ -26,8 +26,10 @@ function pickLayout(n) {
 }
 
 function CaptionBox({ children }) {
+  // left-14 leaves room for the panel-number badge (top-3 left-3, w-9) so
+  // its yellow stamp never sits on top of the narration text.
   return (
-    <div className="absolute top-3 left-3 right-3 bg-[#fff5cc] border-[2.5px] border-black px-3 py-1.5 text-[#1a1a1a] text-sm font-bold leading-snug shadow-[3px_3px_0_0_rgba(0,0,0,0.85)] uppercase tracking-wide">
+    <div className="absolute top-3 left-14 right-3 bg-[#fff5cc] border-[2.5px] border-black px-3 py-1.5 text-[#1a1a1a] text-sm font-bold leading-snug shadow-[3px_3px_0_0_rgba(0,0,0,0.85)] uppercase tracking-wide">
       {children}
     </div>
   )
