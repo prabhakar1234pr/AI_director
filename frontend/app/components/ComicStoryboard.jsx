@@ -3,24 +3,52 @@
 import { Film } from 'lucide-react'
 
 // Variable panel layouts give the page a real comic-book rhythm.
-// We pick a layout based on shot count (1-6 supported, then we reuse).
-// Each entry is a list of grid `colSpan` values for the 6-col grid.
+// Each entry is a list of `{ c, r }` (colSpan, rowSpan) for the 6-col grid.
+// We tile rows so each row sums to 6 cols and no panel is starved by its
+// caption / speech bubble overlay.
 const LAYOUTS = {
-  1: [6],
-  2: [3, 3],
-  3: [6, 3, 3],
-  4: [4, 2, 2, 4],
-  5: [6, 3, 3, 3, 3],
-  6: [4, 2, 3, 3, 6, 6],
+  1: [{ c: 6, r: 1 }],
+  2: [
+    { c: 3, r: 1 },
+    { c: 3, r: 1 },
+  ],
+  3: [
+    { c: 6, r: 1 },
+    { c: 3, r: 1 },
+    { c: 3, r: 1 },
+  ],
+  // 4-panel: two staggered hero panels with two tall side panels — each
+  // side panel is 2 cols × 2 rows so captions never dominate them.
+  4: [
+    { c: 4, r: 2 },
+    { c: 2, r: 2 },
+    { c: 2, r: 2 },
+    { c: 4, r: 2 },
+  ],
+  5: [
+    { c: 6, r: 1 },
+    { c: 3, r: 1 },
+    { c: 3, r: 1 },
+    { c: 3, r: 1 },
+    { c: 3, r: 1 },
+  ],
+  6: [
+    { c: 4, r: 2 },
+    { c: 2, r: 1 },
+    { c: 2, r: 1 },
+    { c: 3, r: 1 },
+    { c: 3, r: 1 },
+    { c: 6, r: 1 },
+  ],
 }
 
 function pickLayout(n) {
   if (LAYOUTS[n]) return LAYOUTS[n]
-  // Fallback: full-width hero, then 2-col rows
-  const layout = [6]
+  // Fallback: full-width hero, then 2-col rows.
+  const layout = [{ c: 6, r: 1 }]
   for (let i = 1; i < n; i += 2) {
-    layout.push(3)
-    if (i + 1 < n) layout.push(3)
+    layout.push({ c: 3, r: 1 })
+    if (i + 1 < n) layout.push({ c: 3, r: 1 })
   }
   return layout
 }
@@ -157,14 +185,13 @@ export default function ComicStoryboard({ shots, shotsWithImages }) {
           }}
         >
           {shots.map((shot, i) => {
-            const span = layout[i] ?? 3
-            const rowSpan = span >= 4 ? 2 : 1
+            const cell = layout[i] ?? { c: 3, r: 1 }
             return (
               <div
                 key={i}
                 style={{
-                  gridColumn: `span ${span} / span ${span}`,
-                  gridRow: `span ${rowSpan} / span ${rowSpan}`,
+                  gridColumn: `span ${cell.c} / span ${cell.c}`,
+                  gridRow: `span ${cell.r} / span ${cell.r}`,
                 }}
               >
                 <Panel shot={shot} image={imageMap[i]} index={i} />
