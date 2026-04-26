@@ -301,13 +301,20 @@ export const useDirectorStore = create(
     }
   },
 
-  // ── API: audio (browser TTS) ─────────────────────────────────────────────
+  // ── API: audio (Google Chirp 3 HD via Cloud TTS) ─────────────────────────
 
   generateAudio: async () => {
     const { shots } = get()
+    if (shots.length === 0) return
     set({ loading: 'audio', error: null })
-    set({ shotsWithAudio: shots })
-    set({ loading: null })
+    try {
+      const data = await postJson('/generate-audio', { shots })
+      set({ shotsWithAudio: data.shots || [] })
+    } catch (e) {
+      set({ error: e.message })
+    } finally {
+      set({ loading: null })
+    }
   },
     }),
     {

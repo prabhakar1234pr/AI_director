@@ -14,7 +14,9 @@ class ShotWithImage(Shot):
 
 
 class ShotWithAudio(Shot):
-    audio_b64: str
+    audio_b64: str  # base64-encoded mp3
+    voice_id: str  # Chirp 3 HD voice (e.g. "Charon")
+    speaker: str   # "narrator" or character name (e.g. "DETECTIVE")
 
 
 class ChatMessage(BaseModel):
@@ -61,12 +63,41 @@ class RegenerateImageResponse(BaseModel):
 # ── Audio generation ──────────────────────────────────────────────────────
 
 
+class VoiceProfile(BaseModel):
+    """One entry in the Chirp 3 HD voice roster Gemini casts from."""
+
+    id: str          # voice short name, e.g. "Charon"
+    gender: Literal["male", "female"]
+    description: str  # short tag the casting model reads
+
+
+class VoiceAssignment(BaseModel):
+    """Per-shot voice pick (one entry per shot, in order)."""
+
+    voice_id: str   # must be present in the roster
+    speaker: str    # "narrator" or a character name in CAPS
+    reason: Optional[str] = None  # optional Gemini explanation, for UI debug
+
+
+class CastVoicesRequest(BaseModel):
+    shots: list[Shot]
+
+
+class CastVoicesResponse(BaseModel):
+    assignments: list[VoiceAssignment]
+    roster: list[VoiceProfile]
+
+
 class GenerateAudioRequest(BaseModel):
     shots: list[Shot]
+    # If provided, skip Gemini casting and use these directly. Length must
+    # equal `shots`. If omitted, the server will cast voices first.
+    assignments: Optional[list[VoiceAssignment]] = None
 
 
 class GenerateAudioResponse(BaseModel):
     shots: list[ShotWithAudio]
+    assignments: list[VoiceAssignment]
 
 
 # ── Cursor-style chat ─────────────────────────────────────────────────────

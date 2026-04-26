@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Pause, Play, Volume2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Mic, Pause, Play, Volume2 } from 'lucide-react'
 import { useSlideshow } from '../hooks/useSlideshow'
 import { useDirectorStore } from '../stores/useDirectorStore'
 
@@ -14,6 +14,7 @@ export default function SlideshowPlayer() {
     useSlideshow(audioForHook)
 
   const currentShot = shotsWithImages?.[currentIndex]
+  const currentAudioShot = shotsWithAudio?.[currentIndex]
   const total = shotsWithImages?.length || 0
 
   if (!currentShot) return null
@@ -38,17 +39,27 @@ export default function SlideshowPlayer() {
           </span>
         </div>
 
-        {hasAudio && isPlaying && (
-          <div className="absolute top-3.5 right-3.5 flex items-center gap-2 bg-accent/90 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-lg font-medium animate-fade-in">
-            <span className="flex gap-0.5 items-end h-3">
-              <span className="w-0.5 bg-white rounded-sm animate-pulse" style={{ height: '60%' }} />
-              <span className="w-0.5 bg-white rounded-sm animate-pulse" style={{ height: '100%', animationDelay: '100ms' }} />
-              <span className="w-0.5 bg-white rounded-sm animate-pulse" style={{ height: '40%', animationDelay: '200ms' }} />
-              <span className="w-0.5 bg-white rounded-sm animate-pulse" style={{ height: '80%', animationDelay: '50ms' }} />
+        <div className="absolute top-3.5 right-3.5 flex items-center gap-2">
+          {currentAudioShot?.voice_id && (
+            <span className="bg-black/75 backdrop-blur-sm text-white/90 text-[11px] px-2 py-1 rounded-lg font-medium tracking-tight flex items-center gap-1.5 uppercase">
+              <Mic className="w-3 h-3 text-accent" />
+              <span className="text-white">{currentAudioShot.speaker || 'narrator'}</span>
+              <span className="text-white/50">·</span>
+              <span className="text-white/70 normal-case">{currentAudioShot.voice_id}</span>
             </span>
-            Playing
-          </div>
-        )}
+          )}
+          {hasAudio && isPlaying && (
+            <span className="flex items-center gap-2 bg-accent/90 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-lg font-medium animate-fade-in">
+              <span className="flex gap-0.5 items-end h-3">
+                <span className="w-0.5 bg-white rounded-sm animate-pulse" style={{ height: '60%' }} />
+                <span className="w-0.5 bg-white rounded-sm animate-pulse" style={{ height: '100%', animationDelay: '100ms' }} />
+                <span className="w-0.5 bg-white rounded-sm animate-pulse" style={{ height: '40%', animationDelay: '200ms' }} />
+                <span className="w-0.5 bg-white rounded-sm animate-pulse" style={{ height: '80%', animationDelay: '50ms' }} />
+              </span>
+              Playing
+            </span>
+          )}
+        </div>
 
         {currentShot.audio && (
           <div className="absolute inset-x-6 bottom-5 flex justify-center pointer-events-none">

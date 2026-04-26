@@ -311,3 +311,89 @@ async def chat_with_director(messages: list[dict], context: ChatContext) -> dict
 
     content = _extract_text_response(data)
     return _extract_json(content)
+
+
+# ── Voice casting (per shot, picks from a curated Chirp 3 HD roster) ─────
+
+
+CAST_SYSTEM_PROMPT = """You are a voice casting director for a cinematic AI storyboard tool.
+
+You receive:
+1. A roster of available voices, each with an id, gender, and short description.
+2. A list of shots from a scene, each with a `shot` label, `type`, and the spoken `audio` text.
+
+Your job: assign EXACTLY ONE voice id from the roster to EACH shot, in order.
+
+Rules:
+- "narration" and "action" shots → use the narrator voice (pick a single narrator voice and reuse it for all narration/action shots in the scene).
+- "dialogue" shots → infer the speaking character from the audio text (or surrounding context) and pick a fitting voice for them. Reuse the same voice every time the same character speaks.
+- Only use voice ids that appear in the roster. Never invent ids.
+- Match gender hints in the dialogue (he/she/sir/ma'am, names) when possible.
+- Match tone: noir/serious → deep voices; playful/young → bright voices; etc.
+
+Output ONLY raw JSON in this exact shape, with one entry per shot in order:
+{
+  "assignments": [
+    {"voice_id": "Charon", "speaker": "narrator"},
+    {"voice_id": "Algieba", "speaker": "DETECTIVE"}
+  ]
+}
+
+`speaker` should be "narrator" for narration/action shots, or the inferred character name in CAPS for dialogue shots. Never include any other text."""
+
+
+def _shots_for_casting(shots: list[Shot]) -> str:
+    lines = []
+    for i, s in enumerate(shots):
+        lines.append(
+            f"[{i}] type={s.type} | shot={s.shot}\n    audio: {s.audio}"
+        )
+    return "\n".join(lines)
+
+
+def _roster_for_prompt(roster) -> str:
+    return "\n".join(
+        f"- {v.id} ({v.gender}): {v.description}" for v in roster
+    )
+
+
+async def cast_voices(shots: list[Shot], roster) -> list[dict]:
+    """Ask Gemini to assign one voice id per shot. Returns raw assignments list."""
+    project, location = _get_project_and_location()
+    access_token = await _get_access_token()
+    model = os.getenv("GEMINI_TEXT_MODEL", DEFAULT_TEXT_MODEL)
+
+    system = CAST_SYSTEM_PROMPT
+    system += "\n\n--- Roster ---\n" + _roster_for_prompt(roster)
+    system += "\n\n--- Shots ---\n" + _shots_for_casting(shots)
+
+    payload = {
+        "system_instruction": {"parts": [{"text": system}]},
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": "Cast voices for the shots above."}],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.3,
+            "maxOutputTokens": 1500,
+            "responseMimeType": "application/json",
+        },
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        resp = await client.post(
+            _vertex_generate_url(project, location, model),
+            headers={"Authorization": f"Bearer {access_token}"},
+            json=payload,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    content = _extract_text_response(data)
+    parsed = _extract_json(content)
+    assignments = parsed.get("assignments")
+    if not isinstance(assignments, list):
+        raise ValueError(f"Casting model returned no assignments: {parsed!r}")
+    return assignments
