@@ -10,8 +10,8 @@ from google.auth.transport.requests import Request
 
 from models.schemas import GenerateScriptResponse, Shot
 
-DEFAULT_TEXT_MODEL = "gemini-2.0-flash"
-DEFAULT_IMAGE_MODEL = "gemini-2.0-flash-preview-image-generation"
+DEFAULT_TEXT_MODEL = "gemini-2.5-flash"
+DEFAULT_IMAGE_MODEL = "gemini-2.5-flash-image"
 DEFAULT_LOCATION = "us-central1"
 _token_cache: dict[str, datetime | str] = {}
 
